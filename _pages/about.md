@@ -2,7 +2,7 @@
 layout: about
 title: about
 permalink: /
-subtitle: <a href='#'>University of T\"ubingen </a>. Cluster of Excellence "Machine Learning: New Perspectives for Science"
+subtitle: <a href='#'>University of Tübingen </a>. Cluster of Excellence "Machine Learning: New Perspectives for Science"
 
 profile:
   align: right
@@ -10,7 +10,7 @@ profile:
   image_circular: false # crops the image to make it circular
   more_info: >
     <p>Maria-vin-Linden strasse 6</p>
-    <p>T\"ubingen, GERMANY</p>
+    <p>Tübingen, GERMANY</p>
 
 news: true # includes a list of news items
 selected_papers: true # includes a list of papers marked as "selected={true}"

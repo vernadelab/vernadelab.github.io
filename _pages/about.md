@@ -1,29 +1,36 @@
 ---
 layout: about
-title: about
+title: home
 permalink: /
-subtitle: <a href='#'>University of Tübingen </a>. Cluster of Excellence "Machine Learning: New Perspectives for Science"
-
-profile:
-  align: right
-  image: prof_pic.jpg
-  image_circular: false # crops the image to make it circular
-  more_info: >
-    <p>Maria-vin-Linden strasse 6</p>
-    <p>Tübingen, GERMANY</p>
-
-news: true # includes a list of news items
-selected_papers: true # includes a list of papers marked as "selected={true}"
-social: true # includes social icons at the bottom of the page
+subtitle: Foundations of Machine Learning · University of Technology Nuremberg
+news: true
+selected_papers: false
+social: false
 ---
 
-The team focuses on Foundations of Machine Learning, and more specifically Reinforcement Learning as a framework to study Interactive Learning and Adaptive Systems. 
+<section class="lab-hero">
+  <p class="eyebrow">VERNADE LAB</p>
+  <h2>Learning to make decisions<br>in a changing world.</h2>
+  <p class="lead">We develop the mathematical foundations of interactive and adaptive learning systems. Our work spans reinforcement learning, bandit algorithms, continual learning, and learning theory.</p>
+  <div class="hero-actions">
+    <a class="lab-button" href="{{ '/research/' | relative_url }}">Explore our research</a>
+    <a class="lab-link" href="{{ '/people/' | relative_url }}">Meet the team <span aria-hidden="true">→</span></a>
+  </div>
+</section>
 
-Our goal is to further the development and understanding of Machine Learning systems that continuously learn. This is a broad problem and we particularly focus on the question of data acquisition towards lifelong learning: How can an agent act now given previous experience and in anticipation of future tasks to come? 
+<section class="lab-intro">
+  <div>
+    <p class="eyebrow">OUR QUESTION</p>
+    <h2>How should an agent act now, given its past experience and the tasks still to come?</h2>
+  </div>
+  <div>
+    <p>Most learning theory assumes a fixed world and a single objective. We study what happens when the world changes, feedback arrives late or indirectly, and a learner must acquire useful knowledge over a lifetime.</p>
+    <p>Led by <a href="https://www.cvernade.com/" target="_blank" rel="noopener">Claire Vernade</a>, the group is part of the <a href="https://www.utn.de/en/" target="_blank" rel="noopener">University of Technology Nuremberg</a>.</p>
+  </div>
+</section>
 
-
-#Write your biography here. Tell the world about yourself. Link to your favorite [subreddit](http://reddit.com). You can put a picture in, too. The code is already in, just name your picture `prof_pic.jpg` and put it in the `img/` folder.
-
-#Put your address / P.O. box / other info right below your picture. You can also disable any of these elements by editing `profile` property of the YAML header of your `_pages/about.md`. Edit `_bibliography/papers.bib` and Jekyll will render your [publications page](/al-folio/publications/) automatically.
-
-#Link to your social media connections, too. This theme is set up to use [Font Awesome icons](https://fontawesome.com/) and [Academicons](https://jpswalsh.github.io/academicons/), like the ones below. Add your Facebook, Twitter, LinkedIn, Google Scholar, or just disable all of them.
+<section class="focus-grid" aria-label="Research areas">
+  <article class="focus-card"><span>01</span><h3>Continual & lifelong learning</h3><p>Agents that reuse experience, adapt to change, and plan what to learn next.</p></article>
+  <article class="focus-card"><span>02</span><h3>Reinforcement learning theory</h3><p>Principled algorithms for decision-making under uncertainty.</p></article>
+  <article class="focus-card"><span>03</span><h3>Bandit algorithms</h3><p>Efficient exploration with structured, delayed, or partial feedback.</p></article>
+</section>

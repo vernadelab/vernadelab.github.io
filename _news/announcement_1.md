@@ -1,8 +1,8 @@
 ---
 layout: post
-date: 2023-01-01 15:59:00-0400
+date: 2026-05-27 10:00:00+0200
 inline: true
 related_posts: false
 ---
 
-PI Claire V. joins Uni. of T\"ubingen after 4 great years at DeepMind in London
+[Commit to the Bit](https://arxiv.org/abs/2605.28276), by Onno Eberhard, Claire Vernade, and Michael Muehlebach, was accepted at ICML 2026.

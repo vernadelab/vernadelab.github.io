@@ -1,65 +1,34 @@
 ---
 layout: page
-title: projects
-permalink: /projects/
-description: A growing collection of your cool projects.
+title: research
+permalink: /research/
+description: The foundations of learning and decision-making over time.
 nav: true
-nav_order: 3
-display_categories: [work, fun]
-horizontal: false
+nav_order: 2
 ---
 
-<!-- pages/projects.md -->
-<div class="projects">
-{% if site.enable_project_categories and page.display_categories %}
-  <!-- Display categorized projects -->
-  {% for category in page.display_categories %}
-  <a id="{{ category }}" href=".#{{ category }}">
-    <h2 class="category">{{ category }}</h2>
-  </a>
-  {% assign categorized_projects = site.projects | where: "category", category %}
-  {% assign sorted_projects = categorized_projects | sort: "importance" %}
-  <!-- Generate cards for each project -->
-  {% if page.horizontal %}
-  <div class="container">
-    <div class="row row-cols-1 row-cols-md-2">
-    {% for project in sorted_projects %}
-      {% include projects_horizontal.liquid %}
-    {% endfor %}
-    </div>
-  </div>
-  {% else %}
-  <div class="row row-cols-1 row-cols-md-3">
-    {% for project in sorted_projects %}
-      {% include projects.liquid %}
-    {% endfor %}
-  </div>
-  {% endif %}
-  {% endfor %}
+<div class="research-principle">
+  <p class="eyebrow">THE BIG PICTURE</p>
+  <h2>Learning does not stop when the environment changes.</h2>
+  <p>We study agents that act, learn from feedback, and carry useful experience from one task to the next. Our aim is to connect rigorous theory with the demands of genuinely adaptive systems.</p>
+</div>
 
-{% else %}
+## ConSequentIAL
 
-<!-- Display projects without categories -->
+<p class="project-meta">ERC Starting Grant · 2025–2030</p>
 
-{% assign sorted_projects = site.projects | sort: "importance" %}
+ConSequentIAL develops foundations for continual and sequential learning systems that can adapt to shifting data, seek information under uncertainty, and account for their own impact on the environment. The project connects constrained and non-stationary reinforcement learning with active data acquisition and long-term skill planning.
 
-  <!-- Generate cards for each project -->
+## FoLiReL
 
-{% if page.horizontal %}
+<p class="project-meta">Emmy Noether Programme, DFG AI Initiative · 2023–2029</p>
 
-  <div class="container">
-    <div class="row row-cols-1 row-cols-md-2">
-    {% for project in sorted_projects %}
-      {% include projects_horizontal.liquid %}
-    {% endfor %}
-    </div>
-  </div>
-  {% else %}
-  <div class="row row-cols-1 row-cols-md-3">
-    {% for project in sorted_projects %}
-      {% include projects.liquid %}
-    {% endfor %}
-  </div>
-  {% endif %}
-{% endif %}
+FoLiReL studies the foundations of lifelong reinforcement learning in structured, non-stationary environments. Its central questions concern how agents reuse past experience, learn useful priors, and balance immediate exploration with the needs of future tasks.
+
+## Research themes
+
+<div class="focus-grid compact">
+  <article class="focus-card"><h3>Non-stationarity</h3><p>Detecting and responding to a world that changes over time.</p></article>
+  <article class="focus-card"><h3>Exploration</h3><p>Gathering the right information under partial, delayed, or structured feedback.</p></article>
+  <article class="focus-card"><h3>Risk & control</h3><p>Moving beyond expected return toward reliable decision-making.</p></article>
 </div>

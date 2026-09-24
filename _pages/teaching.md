@@ -2,11 +2,15 @@
 layout: page
 permalink: /teaching/
 title: teaching
-description: Materials for courses you taught. Replace this text with your description.
+description: Courses, tutorials, and learning resources.
 nav: true
-nav_order: 6
+nav_order: 4
 ---
 
-For now, this page is assumed to be a static description of your courses. You can convert it to a collection similar to `_projects/` so that you can have a dedicated page for each course.
+## Selected tutorials
 
-Organize your courses by years, topics, or universities, however you like!
+- **Foundations of Reinforcement Learning and Control** — INFORMS tutorial.
+- **Contextual Bandits** — Reinforcement Learning Summer School, Barcelona, 2023. [Watch the recording](https://www.youtube.com/watch?v=JfTUzEptKsI).
+- **Foundations for Continual Reinforcement Learning** — EWRL keynote, 2024.
+
+Teaching information for the University of Technology Nuremberg will be added here.

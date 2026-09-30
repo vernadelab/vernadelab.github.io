@@ -23,18 +23,18 @@ nav_order: 1
   <article class="person-card"><img class="person-photo" src="{{ '/assets/img/team/onno-eberhard.webp' | relative_url }}" alt="Onno Eberhard"><h3><a href="https://onnoeberhard.com/" target="_blank" rel="noopener">Onno Eberhard</a></h3><p class="person-role">PhD student</p><p>Dynamical aspects of reinforcement learning. Co-supervised with Michael Muehlebach.</p></article>
   <article class="person-card"><img class="person-photo" src="{{ '/assets/img/team/michela-petriconi.webp' | relative_url }}" alt="Michela Petriconi"><h3><a href="https://petriconi.org/" target="_blank" rel="noopener">Michela Petriconi</a></h3><p class="person-role">PhD student</p><p>Foundations of inverse reinforcement learning.</p></article>
   <article class="person-card"><img class="person-photo" src="{{ '/assets/img/team/ziyad-sheebaelhamd.webp' | relative_url }}" alt="Ziyad Sheebaelhamd"><h3>Ziyad Sheebaelhamd</h3><p class="person-role">PhD student</p></article>
-  <article class="person-card"><div class="person-monogram">MZ</div><h3>Marko Zaric</h3><p class="person-role">PhD student</p></article>
-  <article class="person-card"><img class="person-photo" src="{{ '/assets/img/team/gloria-desideri.webp' | relative_url }}" alt="Gloria Desideri"><h3>Gloria Desideri</h3><p class="person-role">PhD student</p></article>
+  <article class="person-card"><img class="person-photo" src="{{ '/assets/img/team/marko-zaric.jpg' | relative_url }}" alt="Marko Zarić"><h3><a href="https://markozaric.com/" target="_blank" rel="noopener">Marko Zarić</a></h3><p class="person-role">PhD student</p></article>
+  <article class="person-card"><img class="person-photo" src="{{ '/assets/img/team/gloria-desideri.webp' | relative_url }}" alt="Gloria Desideri"><h3><a href="https://gdesideri.github.io/" target="_blank" rel="noopener">Gloria Desideri</a></h3><p class="person-role">PhD student</p></article>
   <article class="person-card"><div class="person-monogram">AE</div><h3>Amer Essakine</h3><p class="person-role">PhD student</p></article>
 </div>
 
 <h2 class="section-label">Postdoctoral researchers</h2>
 
 <div class="people-grid">
-  <article class="person-card"><div class="person-monogram">AC</div><h3>Amin Charusaie</h3><p class="person-role">Postdoctoral researcher</p></article>
+  <article class="person-card"><img class="person-photo" src="{{ '/assets/img/team/amin-charusaie.jpg' | relative_url }}" alt="Amin Charusaie"><h3><a href="https://charusaie.github.io/" target="_blank" rel="noopener">Amin Charusaie</a></h3><p class="person-role">Postdoctoral researcher</p></article>
   <article class="person-card"><div class="person-monogram">TG</div><h3>Thomas Grote</h3><p class="person-role">Postdoctoral researcher</p></article>
   <article class="person-card"><div class="person-monogram">AT</div><h3>Adrienne Tuynman</h3><p class="person-role">Postdoctoral researcher</p></article>
-  <article class="person-card"><div class="person-monogram">AR</div><h3>Alexander von Rohr</h3><p class="person-role">Postdoctoral researcher</p></article>
+  <article class="person-card"><img class="person-photo" src="{{ '/assets/img/team/alexander-von-rohr.jpg' | relative_url }}" alt="Alexander von Rohr"><h3><a href="https://avrohr.com/" target="_blank" rel="noopener">Alexander von Rohr</a></h3><p class="person-role">Postdoctoral researcher</p></article>
 </div>
 
 <h2 class="section-label">Alumni</h2>

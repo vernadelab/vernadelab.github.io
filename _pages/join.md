@@ -7,11 +7,7 @@ nav: true
 nav_order: 5
 ---
 
-<div class="availability-notice">
-  <p class="eyebrow">CURRENT AVAILABILITY</p>
-  <h2>There are no open positions at this time.</h2>
-  <p>All available positions have been filled. Any future PhD, postdoctoral, internship, or student opportunities will be advertised on this website.</p>
-</div>
+> **There are no open positions at this time.** All available positions have been filled. Future PhD, postdoctoral, internship, or student opportunities will be advertised on this website.
 
 ## Applications FAQ
 
@@ -32,7 +28,7 @@ When positions are open, applicants are generally asked for:
 - Academic transcripts and any documents required by the relevant doctoral or fellowship programme.
 - Recommendation letters when required by the programme.
 
-The motivation letter should explain why the applicant wants to pursue the proposed position, how their background and research interests connect to the group, and—optionally—which specific research questions interest them.
+The motivation letter should explain why the applicant wants to pursue the proposed position, how their background and research interests connect to the group, and, optionally, which specific research questions interest them.
 
 ### Are Master's projects or internships available?
 

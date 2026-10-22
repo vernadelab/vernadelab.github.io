@@ -12,14 +12,14 @@ nav_order: 4
     <p class="text-muted mb-2">M.Sc. AI and Robotics · University of Technology Nuremberg</p>
     <h2 class="card-title mt-0">Introduction to Reinforcement Learning</h2>
     <p class="card-text">Lecture materials for the Introduction to Reinforcement Learning course. The complete sequence will contain twelve lectures; titles and materials will be added as the course develops.</p>
-    <a class="btn btn-outline-primary" href="{{ '/assets/teaching/rl-utn/lecture-02-dynamic-programming/' | relative_url }}">Open Lecture 2: Dynamic Programming</a>
+    <a class="btn btn-outline-primary" href="../assets/teaching/rl-utn/lecture-02-dynamic-programming/index.html">Open Lecture 2: Dynamic Programming</a>
   </div>
 </div>
 
 ## Lecture sequence
 
 1. **TBA (CM)**
-2. **Dynamic Programming** — <a href="{{ '/assets/teaching/rl-utn/lecture-02-dynamic-programming/' | relative_url }}">Interactive HTML lecture</a>
+2. **Dynamic Programming** — <a href="../assets/teaching/rl-utn/lecture-02-dynamic-programming/index.html">Interactive HTML lecture</a>
 3. **Model-free prediction** — _work in progress_
 4. **TBA (CM)**
 5. **TBA (CM)**

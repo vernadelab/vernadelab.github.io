@@ -19,7 +19,7 @@ nav_order: 4
 ## Lecture sequence
 
 1. **TBA (CM)**
-2. **Dynamic Programming** — [Interactive HTML lecture]({{ '/assets/teaching/rl-utn/lecture-02-dynamic-programming/' | relative_url }})
+2. **Dynamic Programming** — <a href="{{ '/assets/teaching/rl-utn/lecture-02-dynamic-programming/' | relative_url }}">Interactive HTML lecture</a>
 3. **Model-free prediction** — _work in progress_
 4. **TBA (CM)**
 5. **TBA (CM)**

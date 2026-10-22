@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dynamic Programming</title>
+<link rel="stylesheet" href="../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../assets/theme.css">
+</head>
+<body data-lecture="RL · Lecture 2 · Dynamic Programming" data-author="Claire Vernade">
+<main class="deck">
+
+<!-- =====================================================================
+     0 · TITLE & PLAN
+     ===================================================================== -->
+<section class="slide title-slide">
+  <h1>Dynamic Programming</h1>
+  <div class="subtitle">Reinforcement Learning · Lecture 2</div>
+  <div class="author">Claire Vernade</div>
+  <div class="affil">University of Technology Nuremberg</div>
+  <div class="date">22 October 2026</div>
+</section>
+
+<section class="slide">
+  <h2>Today</h2>
+  <div class="cols c-60-40 middle">
+    <ol>
+      <li><b>Recap &amp; notation</b> — and our running example: the two-exit maze</li>
+      <li><b>Value functions</b> — how good is a policy?</li>
+      <li><b>Bellman equations</b> — expectation, optimality, operators</li>
+      <li><b>Dynamic programming</b> — policy evaluation, policy iteration, value iteration</li>
+    </ol>
+    <div class="box theorem"><span class="box-title">Today's assumption</span>
+      The MDP is <em>known</em>: we can query $P$ and $r$.<br>
+      This is <b>planning</b>, not yet learning.</div>
+  </div>
+  <aside class="notes">Chris covered motivation and MDPs last week; we start with a quick notation recap. Model-free methods next week.</aside>
+</section>
+
+<!-- =====================================================================
+     1 · RECAP, NOTATION, RUNNING EXAMPLE
+     ===================================================================== -->
+<section class="slide section">
+  <div class="num">Part 1</div>
+  <h2>Recap &amp; running example</h2>
+  <p>Notation, the maze we will use all lecture, and the objective.</p>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Recap</span>Agent and environment</h2>
+  <div class="cols c-40-60 middle">
+    <figure>
+      <svg viewBox="0 0 420 300" width="420" height="300" aria-label="agent-environment loop">
+        <rect x="120" y="20" width="180" height="70" rx="12" fill="#eef3e6" stroke="#2f5a24" stroke-width="2"/>
+        <text x="210" y="63" text-anchor="middle" font-size="24" font-weight="700" fill="#2f5a24">Agent</text>
+        <rect x="120" y="210" width="180" height="70" rx="12" fill="#f6f5f0" stroke="#1b1d1a" stroke-width="2"/>
+        <text x="210" y="253" text-anchor="middle" font-size="24" font-weight="700">Environment</text>
+        <path d="M300 55 H380 V245 H306" fill="none" stroke="#b5541c" stroke-width="3" marker-end="url(#a1)"/>
+        <text x="390" y="155" font-size="20" fill="#b5541c">A<tspan font-size="13" dy="5">t</tspan></text>
+        <path d="M120 245 H40 V55 H114" fill="none" stroke="#2f5a24" stroke-width="3" marker-end="url(#a2)"/>
+        <text x="-2" y="140" font-size="20" fill="#2f5a24">S<tspan font-size="13" dy="5">t+1</tspan></text>
+        <text x="-2" y="175" font-size="20" fill="#2f5a24">R<tspan font-size="13" dy="5">t+1</tspan></text>
+        <defs><marker id="a1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" fill="#b5541c"/></marker>
+              <marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" fill="#2f5a24"/></marker></defs>
+      </svg>
+    </figure>
+    <div>
+      <p>At each time step $t = 0, 1, 2, \dots$</p>
+      <ul>
+        <li>the agent observes the state $S_t \in \S$</li>
+        <li>picks an action $A_t \in \A$</li>
+        <li>receives a reward $R_{t+1}$ and moves to $S_{t+1}$</li>
+      </ul>
+      <p class="small muted">Trajectory: $S_0, A_0, R_1, S_1, A_1, R_2, S_2, \dots$</p>
+    </div>
+  </div>
+  <div class="todo">Align symbols with Chris's Lecture 1 (R_{t+1} vs R_t; r(s,a) vs r(s,a,s')). All macros live in assets/macros.js.</div>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Recap</span>Markov Decision Process</h2>
+  <div class="box definition"><span class="box-title">Definition</span>
+    A (discounted) MDP is a tuple $\M = (\S, \A, P, r, \gamma)$:
+    <ul class="small">
+      <li>$\S$ finite set of states, $\A$ finite set of actions</li>
+      <li>$P(s' \mid s, a)$ transition probabilities &nbsp;— <i>Markov</i>: depends only on $(s,a)$</li>
+      <li>$r(s,a)$ expected immediate reward, $\;r(s,a) = \E[R_{t+1} \mid S_t = s, A_t = a]$</li>
+      <li>$\gamma \in (0,1)$ discount factor</li>
+    </ul>
+  </div>
+  <p class="fragment">An MDP is a <em>model</em> of the problem. It assumes the state is fully observed, the dynamics are Markov, and the goal can be written as a cumulative reward (the "reward hypothesis").</p>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Running example</span>The two-exit maze</h2>
+  <div class="cols c-40-60">
+    <div class="maze" data-values="none" data-size="400"></div>
+    <div>
+      <ul class="small">
+        <li>12 states $s_1, \dots, s_{12}$, start at $s_1$</li>
+        <li>Actions: $\A = \{\uparrow, \rightarrow, \downarrow, \leftarrow\}$</li>
+        <li><b>Deterministic</b> moves; walls and borders: stay put</li>
+        <li>Two exits end the episode:
+          <ul>
+            <li><span class="orange"><b>small exit</b></span>: $+1$, close by</li>
+            <li><span style="color:#8a6a00"><b>big exit</b></span>: $+5$, far away</li>
+          </ul></li>
+        <li>All other rewards are $0$</li>
+      </ul>
+      <div class="box discuss fragment"><span class="box-title">Discuss with your neighbour</span>
+        Which exit should the agent go to?</div>
+    </div>
+  </div>
+  <aside class="notes">Let them argue. Both answers are defensible: the answer depends on γ, which is the point of the lecture's first half.</aside>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Running example</span>The maze as an MDP</h2>
+  <div class="cols c-60-40">
+    <div>
+      <ul class="small" style="margin-bottom:4px">
+        <li>$\S = \{s_1, \dots, s_{12}\}$ + two <em>terminal</em> exits. $\;r(s,a) = 5$ or $1$ when $a$ enters an exit, else $0$</li>
+        <li>Deterministic: $P(s' \mid s,a) \in \{0,1\}$, e.g. $P(s_7 \mid s_6, \rightarrow) = 1$, $\;P(s_1 \mid s_1, \leftarrow) = 1$</li>
+      </ul>
+      <div class="box definition fragment small" style="margin:2px 0 12px"><span class="box-title">Variant: the slippery maze</span>
+        W.p. $0.8$ the intended move; w.p. $0.2$ a <b>slip</b> to one of the 3 other neighbours ($0.2/3$ each). Slipping into a wall = staying put.
+      </div>
+      <ul class="small">
+        <li class="fragment"><b>Stochastic transitions</b>: same state, same action, several possible next states</li>
+        <li class="fragment">Model <b>external perturbations</b>: wind, slippery floor, actuator noise, other agents</li>
+        <li class="fragment">$r(s,a)$ is now an expectation: $r(s_6,\rightarrow) = \tfrac{0.2}{3}\cdot 1 \approx 0.07$</li>
+      </ul>
+    </div>
+    <figure><div class="maze vertical" data-values="none" data-size="340" data-show="s6:right" data-controls="slip" data-slip-value="0.2"></div>
+      <figcaption>$P(\cdot \mid s_6, \rightarrow)$. Toggle to compare.</figcaption></figure>
+  </div>
+  <aside class="notes">Start deterministic: s6 → s7 with probability 1. Click the toggle: 0.8 to s7, 0.07 each to s3, the small exit (reward +1!) and "stay" (slipping up into the wall). Ask: is the far exit still worth it? (Yes at γ = 0.9, but V*(s1) drops from 2.95 to 2.28.)</aside>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Running example</span>In the computer: $P$ and $r$ are arrays</h2>
+  <div class="cols c-40-60">
+    <div>
+<pre><code>S, A = 14, 4   # 12 cells + 2 exits; ↑ → ↓ ←
+P = np.zeros((A, S, S))  # P[a, s, s']
+r = np.zeros((S, A))     # r[s, a]
+
+# every row is a distribution
+assert np.allclose(P.sum(axis=2), 1)
+
+# one Bellman backup, all (s, a) at once
+Q = r + gamma * np.einsum("ast,t->sa", P, V)
+V = Q.max(axis=1)</code></pre>
+      <ul class="small">
+        <li>$P$ = $|\A| = 4$ <b>stochastic matrices</b> of size $|\S| \times |\S|$</li>
+        <li class="fragment">Walls are not states. The exits are <b>absorbing</b>: $P(G \mid G, a) = 1$, $r = 0$</li>
+        <li class="fragment">Memory $|\A|\,|\S|^2$: 784 numbers here; impossible for chess or Go</li>
+      </ul>
+    </div>
+    <div class="pmatrix" data-action="right" data-slip="0" data-row="s6" data-cell="25"></div>
+  </div>
+  <aside class="notes">Click P[↑], P[→], … and the deterministic/slippery toggle. Deterministic: exactly one 1 per row (a permutation-like structure). Slippery: up to 4 non-zeros per row. Row s6 (orange) is the same distribution as on the previous slide.</aside>
+</section>
+
+<section class="slide">
+  <h2>Policies</h2>
+  <div class="box definition"><span class="box-title">Definition</span>
+    A (stationary, Markov) <b>policy</b> maps states to distributions over actions: $\;\pi(a \mid s) = \P(A_t = a \mid S_t = s)$.<br>
+    Deterministic policy: $\pi : \S \to \A$.
+  </div>
+  <div class="cols c-3" style="margin-top:6px">
+    <figure><div class="maze vertical" data-values="none" data-policy="small" data-arrows="policy" data-labels="none" data-size="250"></div><figcaption>$\pi_{\text{small}}$: shortest path to $+1$</figcaption></figure>
+    <figure><div class="maze vertical" data-values="none" data-policy="big" data-arrows="policy" data-labels="none" data-size="250"></div><figcaption>$\pi_{\text{big}}$: shortest path to $+5$</figcaption></figure>
+    <figure><div class="maze vertical" data-values="none" data-policy="uniform" data-arrows="policy" data-labels="none" data-size="250"></div><figcaption>$\pi_{\text{unif}}$: uniformly random</figcaption></figure>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>The return</h2>
+  <div class="box definition"><span class="box-title">Definition</span>
+    The (discounted) return from time $t$:
+    $$G_t = R_{t+1} + \gamma R_{t+2} + \gamma^2 R_{t+3} + \dots = \sum_{k=0}^{\infty} \gamma^k R_{t+k+1}$$
+  </div>
+  <div class="cols">
+    <div class="fragment">
+      <h3>Following $\pi_{\text{small}}$ from $s_1$</h3>
+      <div class="cols" style="grid-template-columns: 1fr auto; gap: 16px">
+        <div><p class="small" style="margin-bottom:8px">$s_1 \xrightarrow{\uparrow} s_5 \xrightarrow{\rightarrow} \text{small exit}$</p>
+          <p>$G_0 = 0 + \gamma \cdot 1 = \gamma$</p></div>
+        <div class="maze" data-values="none" data-policy="small" data-arrows="policy" data-labels="none" data-size="160"></div>
+      </div>
+    </div>
+    <div class="fragment">
+      <h3>Following $\pi_{\text{big}}$ from $s_1$</h3>
+      <div class="cols" style="grid-template-columns: 1fr auto; gap: 16px">
+        <div><p class="small" style="margin-bottom:8px">$s_1 \to s_2 \to s_3 \to s_6 \to s_7 \to s_{10} \to \text{big exit}$</p>
+          <p>$G_0 = 0 + \dots + 0 + \gamma^5 \cdot 5$</p></div>
+        <div class="maze" data-values="none" data-policy="big" data-arrows="policy" data-labels="none" data-size="160"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="slide practice-slide">
+  <h2>Let's practice: when is the big exit worth it?</h2>
+  <p>From $s_1$, compare $\;\gamma\;$ (small exit) and $\;5\gamma^5\;$ (big exit).</p>
+  <div class="fragment"><p>$$5\gamma^5 > \gamma \iff \gamma^4 > \tfrac15 \iff \gamma > 5^{-1/4} \approx 0.669$$</p></div>
+  <ul>
+    <li class="fragment">$\gamma = 0.9$: $\;5 \cdot 0.9^5 \approx 2.95 > 0.9$ → go <b>big</b></li>
+    <li class="fragment">$\gamma = 0.5$: $\;5 \cdot 0.5^5 \approx 0.16 < 0.5$ → go <b>small</b></li>
+  </ul>
+  <div class="box discuss fragment"><span class="box-title">Think</span>
+    Is the threshold the same for every starting state? (Try $s_6$, next to both routes.)</div>
+  <aside class="notes">Do it on the board. s6 is one step from the small exit and three from the big: 5γ² > 1 iff γ > 5^(-1/2) ≈ 0.447. So the threshold depends on the state.</aside>
+</section>
+
+<section class="slide">
+  <h2>Why discount?</h2>
+  <div class="cols c-40-60">
+    <div>
+    <ul class="small">
+      <li class="fragment" data-frag="1">Keeps returns <b>finite</b>: if $|R_t| \le R_{\max}$ then $|G_t| \le \frac{R_{\max}}{1-\gamma}$</li>
+      <li class="fragment" data-frag="2">Expresses <b>uncertainty about the future</b> (→)</li>
+      <li class="fragment" data-frag="5"><b>Effective horizon</b> $\E[T] = \frac{1}{1-\gamma}$: $\gamma = 0.9 \Rightarrow 10$ steps, $\;\gamma = 0.99 \Rightarrow 100$</li>
+      <li class="fragment" data-frag="6">Humans and animals prefer immediate rewards</li>
+    </ul>
+    <div class="box theorem fragment small" data-frag="8"><span class="box-title">Take-away</span>
+      $\gamma$ is part of the <em>problem</em>, not of the algorithm. Changing $\gamma$ changes what "optimal" means.</div>
+    </div>
+    <div>
+      <div class="box definition fragment small" data-frag="2"><span class="box-title">Discounting = a geometric belief about the end</span>
+        <p style="margin-bottom:4px">Suppose the episode ends after each step w.p. $1-\gamma$: a random horizon $T$ with $\P(T > k) = \gamma^k$. The expected <b>undiscounted</b> reward until $T$ is</p>
+        <div class="fragment" data-frag="3">$$\E_T\Big[\sum_{k=0}^{T-1} R_{t+k+1}\Big] = \sum_{k \ge 0} \P(T > k)\, R_{t+k+1} = \sum_{k \ge 0} \gamma^k R_{t+k+1} = G_t$$</div>
+        <p class="fragment" data-frag="4" style="margin:0">A reward $k$ steps ahead counts with weight $\gamma^k$ = the probability of still being there.</p>
+      </div>
+      <div class="box discuss fragment tiny" data-frag="7" style="font-size:16px"><span class="box-title">Beyond geometric</span>
+        If we are uncertain about the stopping rate itself, the weights become <b>hyperbolic</b>, $\propto 1/(1+\kappa k)$ (Fedus et al., <i>Hyperbolic discounting and learning over multiple horizons</i>, <span style="white-space:nowrap">arXiv:1902.06865</span>). This raises additional computational questions (no single Bellman recursion); out of scope here.</div>
+    </div>
+  </div>
+  <aside class="notes">Geometric horizon: T is the step at which the episode ends; P(T &gt; k) = γ^k. Exchange expectation and sum (T independent of the rewards). The effective horizon 1/(1−γ) is then simply E[T]. Hyperbolic discounting (Fedus et al. 2019): averaging exponential discounts over a prior on γ gives hyperbolic weights; they approximate it by learning many values with different γ at once.</aside>
+</section>
+
+<section class="slide">
+  <h2>The objective</h2>
+  <div class="box theorem"><span class="box-title">Goal</span>
+    Find a policy $\pi$ maximising the <b>expected discounted return</b>
+    $$\max_\pi \; \E_\pi\Big[\sum_{t=0}^{\infty} \gamma^t R_{t+1} \;\Big|\; S_0 = s\Big] \quad \text{for every } s$$
+  </div>
+  <div class="cols">
+    <div class="fragment"><h3>Prediction</h3>Given $\pi$: how good is it? → <b>evaluate</b> $\pi$</div>
+    <div class="fragment"><h3>Control</h3>Find the best $\pi$ → <b>optimise</b></div>
+  </div>
+  <p class="fragment" style="margin-top:20px">When the MDP is known, this is an <em>optimisation</em> problem (planning). When it is unknown, it's a <em>learning</em> problem (next lectures).</p>
+  <div class="todo">Optional: 1–2 slides on planning vs learning (Georg's Atari example), if Chris hasn't covered it.</div>
+</section>
+
+<!-- =====================================================================
+     2 · VALUE FUNCTIONS
+     ===================================================================== -->
+<section class="slide section">
+  <div class="num">Part 2</div>
+  <h2>Value functions</h2>
+  <p>How good is it to be in a state, or to take an action, when following $\pi$?</p>
+</section>
+
+<section class="slide">
+  <h2>State-value function</h2>
+  <div class="box definition"><span class="box-title">Definition</span>
+    The <b>value</b> of state $s$ under policy $\pi$ is the expected return when starting in $s$ and following $\pi$:
+    $$\Vpi(s) = \E_\pi\big[\,G_t \mid S_t = s\,\big]$$
+  </div>
+  <ul>
+    <li>$\E_\pi$: actions drawn from $\pi$, next states from $P$</li>
+    <li>A value function is just a <b>vector</b> $\Vpi \in \R^{|\S|}$, one number per state. In the maze, 12 numbers.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Action-value function</h2>
+  <div class="box definition"><span class="box-title">Definition</span>
+    First take action $a$ in $s$, then follow $\pi$:
+    $$\Qpi(s,a) = \E_\pi\big[\,G_t \mid S_t = s, A_t = a\,\big]$$
+  </div>
+  <p class="fragment">The two are linked:</p>
+  <div class="cols fragment">
+    <div class="center">$$\Vpi(s) = \sum_{a} \pi(a \mid s)\, \Qpi(s,a)$$</div>
+    <div class="center">$$\Qpi(s,a) = r(s,a) + \gamma \sum_{s'} P(s' \mid s,a)\, \Vpi(s')$$</div>
+  </div>
+  <aside class="notes">The second identity is already one half of the Bellman equation; point that out later.</aside>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Maze</span>$\Vpi$ of the uniformly random policy, $\gamma = 0.9$</h2>
+  <div class="cols c-40-60">
+    <div class="maze" data-policy="uniform" data-values="exact" data-gamma="0.9" data-vmax="5" data-size="370"></div>
+    <div>
+      <div class="cols middle" style="grid-template-columns: auto 1fr; gap: 18px; margin-bottom: 10px">
+        <div class="maze" data-values="none" data-policy="uniform" data-arrows="policy" data-labels="none" data-size="130"></div>
+        <p class="small" style="margin:0">Fix $\pi$ = <b>uniformly random</b>: each action w.p. $\tfrac14$.<br>I computed $\Vpi$ for you (left).</p>
+      </div>
+      <ul class="small">
+        <li class="fragment">Why is $s_{10}$ the most valuable state?</li>
+        <li class="fragment">Why is $V(s_5) &gt; V(s_1)$?</li>
+        <li class="fragment">The random walker often bumps into walls; it can still stumble into the big exit.</li>
+      </ul>
+      <div class="box discuss fragment small"><span class="box-title">Open questions</span>
+        <ul style="margin:0">
+          <li>How did I compute these numbers? <span class="muted">(Parts 3 and 4)</span></li>
+          <li>Can I <b>improve</b> the policy using this function? <span class="muted">(Part 4)</span></li>
+        </ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide practice-slide">
+  <h2>Let's practice: value of $\pi_{\text{small}}$</h2>
+  <div class="cols c-40-60">
+    <div class="maze" data-policy="small" data-values="blank" data-arrows="policy" data-gamma="0.9" data-size="380" data-controls="reveal"></div>
+    <div>
+      <p>$\gamma = 0.9$. Policy is deterministic, moves are deterministic: the return is a <b>single number</b>.</p>
+      <p>If the exit is $d$ steps away: $\;\Vpi(s) = \gamma^{d-1}\cdot 1$.</p>
+      <p class="small muted">Click a cell to reveal its value.</p>
+      <div class="box discuss fragment"><span class="box-title">Think</span>
+        Do you need to compute each value independently of all the others, already computed ones?</div>
+      <p class="small fragment">No: e.g. $\Vpi(s_1) = 0 + \gamma\, \Vpi(s_5) = 0.9 \cdot 1$. Each value is the reward plus $\gamma \times$ the value of the next state. That is the <b>Bellman equation</b>.</p>
+    </div>
+  </div>
+  <aside class="notes">Fill in a few cells with the class (s2, s1, s3, s4…) before revealing.</aside>
+</section>
+
+<!-- =====================================================================
+     3 · BELLMAN EQUATIONS
+     ===================================================================== -->
+<section class="slide section">
+  <div class="num">Part 3</div>
+  <h2>Bellman equations</h2>
+  <p>Value = immediate reward + discounted value of where you land.</p>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Derivation 1/2</span>Bellman expectation equation</h2>
+  <p class="small">Recall the return: $\;G_t = \sum_{k \ge 0} \gamma^k R_{t+k+1} = R_{t+1} + \gamma \big(R_{t+2} + \gamma R_{t+3} + \dots\big) = R_{t+1} + \gamma\, G_{t+1}$</p>
+  <p class="small">Fix a policy $\cpol{\pi}$ (e.g. $\pi_{\text{big}}$). Goal: compute $\Vpi(s) = \E_\pi[G_t \mid S_t = s]$ for all $s$, <b>efficiently</b>.</p>
+  <div class="eq-big fragment">$$\Vpi(s) = \E_\pi[\crew{R_{t+1}} + \gamma\, \cfut{G_{t+1}} \mid S_t = s] = \underbrace{\E_\pi[\crew{R_{t+1}} \mid S_t = s]}_{\crew{\text{immediate reward}}} + \gamma\, \underbrace{\E_\pi[\cfut{G_{t+1}} \mid S_t = s]}_{\cfut{\text{future}}}$$</div>
+  <div class="box theorem fragment"><span class="box-title">Why the future term is $\E_\pi[\Vpi(S_{t+1}) \mid S_t = s]$</span>
+    <p class="small" style="margin-bottom:4px">Condition on where we land, then use the <b>Markov property</b>: once $S_{t+1} = s'$ is known, what happens next does not depend on the past.</p>
+    <p class="small" style="margin:0">$$\E_\pi[\cfut{G_{t+1}} \mid S_t = s] = \E_\pi\big[\, \E_\pi[\cfut{G_{t+1}} \mid S_{t+1}] \;\big|\; S_t = s \big] = \E_\pi[\cfut{\Vpi(S_{t+1})} \mid S_t = s]$$</p>
+  </div>
+  <p class="small muted fragment">Careful: $G_{t+1} \neq \Vpi(S_{t+1})$ as random variables. They are only equal <b>in expectation</b> given $S_{t+1}$ (tower rule).</p>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Derivation 2/2</span>Bellman expectation equation</h2>
+  <p class="small">Develop each term: first draw $a \sim \cpol{\pi(\cdot \mid s)}$, then $s' \sim \cfut{P(\cdot \mid s,a)}$.</p>
+  <div class="fragment cols middle" style="grid-template-columns: 190px 1fr; gap: 10px"><b class="orange small">Immediate reward</b>
+    <div>$$\E_\pi[\crew{R_{t+1}} \mid S_t = s] = \sum_a \cpol{\pi(a \mid s)}\, \crew{r(s,a)}$$</div></div>
+  <div class="fragment cols middle" style="grid-template-columns: 190px 1fr; gap: 10px"><b class="small" style="color:#2b5b84">Future</b>
+    <div>$$\E_\pi[\cfut{\Vpi(S_{t+1})} \mid S_t = s] = \sum_a \cpol{\pi(a \mid s)} \sum_{s'} \cfut{P(s' \mid s,a)\, \Vpi(s')}$$</div></div>
+  <div class="box theorem fragment"><span class="box-title">Recombine: Bellman expectation equation</span>
+    <div>$$\Vpi(s) = \sum_a \cpol{\pi(a \mid s)} \Big( \crew{r(s,a)} + \gamma \sum_{s'} \cfut{P(s' \mid s,a)\, \Vpi(s')} \Big)$$</div>
+    <p class="small" style="margin:0">One equation per state: $|\S|$ <b>linear</b> equations in the $|\S|$ unknowns $\Vpi(s)$.</p>
+  </div>
+  <p class="small fragment">Same for $Q$: $\;\Qpi(s,a) = \crew{r(s,a)} + \gamma \sum_{s'} \cfut{P(s' \mid s,a)} \sum_{a'} \cpol{\pi(a' \mid s')}\, \Qpi(s',a')$</p>
+</section>
+
+<section class="slide">
+  <h2>Backup diagram</h2>
+  <div class="cols c-40-60 middle">
+    <svg viewBox="0 0 440 360" width="440" height="360" aria-label="backup diagram for V^pi, colour-coded">
+      <g stroke-width="2.5" fill="none">
+        <line x1="220" y1="52" x2="115" y2="148" stroke="#2f5a24"/><line x1="220" y1="52" x2="325" y2="148" stroke="#2f5a24"/>
+        <line x1="115" y1="160" x2="60" y2="282" stroke="#2b5b84"/><line x1="115" y1="160" x2="165" y2="282" stroke="#2b5b84"/>
+        <line x1="325" y1="160" x2="275" y2="282" stroke="#2b5b84"/><line x1="325" y1="160" x2="380" y2="282" stroke="#2b5b84"/>
+      </g>
+      <circle cx="220" cy="38" r="22" fill="#fff" stroke="#1b1d1a" stroke-width="2.5"/>
+      <text x="220" y="45" text-anchor="middle" font-size="20" font-weight="700">s</text>
+      <circle cx="115" cy="154" r="11" fill="#1b1d1a"/><circle cx="325" cy="154" r="11" fill="#1b1d1a"/>
+      <g fill="#fff" stroke="#2b5b84" stroke-width="2.5">
+        <circle cx="60" cy="300" r="20"/><circle cx="165" cy="300" r="20"/><circle cx="275" cy="300" r="20"/><circle cx="380" cy="300" r="20"/>
+      </g>
+      <text x="380" y="307" text-anchor="middle" font-size="18" fill="#2b5b84" font-weight="700">s′</text>
+      <text x="380" y="345" text-anchor="middle" font-size="18" fill="#2b5b84" font-weight="700">V^π(s′)</text>
+      <text x="292" y="92" font-size="19" fill="#2f5a24" font-weight="700">π(a|s)</text>
+      <text x="346" y="160" font-size="19" fill="#1b1d1a" font-weight="700">a</text>
+      <rect x="342" y="172" width="86" height="30" rx="6" fill="#fbefe6" stroke="#b5541c" stroke-width="2"/>
+      <text x="385" y="193" text-anchor="middle" font-size="18" fill="#b5541c" font-weight="700">r(s,a)</text>
+      <text x="268" y="238" font-size="17" fill="#2b5b84" font-weight="700" text-anchor="end">P(s′|s,a)</text>
+    </svg>
+    <div>
+      <div>$$\Vpi(s) = \sum_a \cpol{\pi(a \mid s)} \Big( \crew{r(s,a)} + \gamma \sum_{s'} \cfut{P(s' \mid s,a)\, \Vpi(s')} \Big)$$</div>
+      <ul class="small">
+        <li>open circle = state, filled = action</li>
+        <li><span class="green"><b>top level</b></span>: average over actions with $\cpol{\pi}$</li>
+        <li><span class="orange"><b>at the action</b></span>: collect the reward $\crew{r(s,a)}$</li>
+        <li><span style="color:#2b5b84"><b>bottom level</b></span>: average over next states with $\cfut{P}$, weighting their values $\cfut{\Vpi(s')}$</li>
+        <li>"back up" the leaves to the root: that is one Bellman update</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide practice-slide">
+  <h2>Let's practice: Bellman equation in the maze</h2>
+  <div class="cols c-40-60">
+    <div class="maze" data-policy="uniform" data-values="exact" data-gamma="0.9" data-size="380" data-click="backup" data-info="#info-bellman"></div>
+    <div>
+      <p>Uniformly random policy, $\gamma = 0.9$. Write the equation for $s_{10}$:</p>
+      <p class="fragment small">$\Vpi(s_{10}) = \tfrac14\big[(5 + 0) + \gamma \Vpi(s_{10}) + \gamma \Vpi(s_7) + \gamma\Vpi(s_{10})\big]$</p>
+      <p class="fragment small muted">↑ exit, → wall, ↓ $s_7$, ← wall. Click any state to check.</p>
+      <div id="info-bellman"></div>
+    </div>
+  </div>
+  <aside class="notes">Clicking a state shows all four Q-values and their average. Good moment to check that the displayed values are consistent.</aside>
+</section>
+
+<section class="slide">
+  <h2>Matrix form and closed-form solution</h2>
+  <p>Stack everything into vectors: $r^\pi(s) = \sum_a \pi(a|s) r(s,a)$, $\;P^\pi(s,s') = \sum_a \pi(a|s) P(s'|s,a)$.</p>
+  <div class="eq-big">$$\Vpi = r^\pi + \gamma P^\pi \Vpi \quad\Longrightarrow\quad \Vpi = (I - \gamma P^\pi)^{-1} r^\pi$$</div>
+  <ul>
+    <li class="fragment">A <b>linear</b> system: $|\S|$ equations, $|\S|$ unknowns</li>
+    <li class="fragment">$I - \gamma P^\pi$ is invertible because $\gamma < 1$ and $P^\pi$ is stochastic</li>
+    <li class="fragment">Cost $O(|\S|^3)$: fine for 12 states, not for $10^{6}$ states → iterative methods</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Bellman operator</h2>
+  <div class="box definition"><span class="box-title">Definition</span>
+    For any $V \in \R^{|\S|}$, define $\Tpi V \in \R^{|\S|}$ by
+    $$(\Tpi V)(s) = \sum_a \pi(a \mid s)\Big( r(s,a) + \gamma \sum_{s'} P(s' \mid s,a)\, V(s') \Big)$$
+  </div>
+  <p>The Bellman equation says: $\Vpi$ is a <b>fixed point</b>, $\;\Tpi \Vpi = \Vpi$.</p>
+  <div class="box theorem fragment"><span class="box-title">Proposition (contraction)</span>
+    $\norm{\Tpi U - \Tpi V}_\infty \le \gamma \norm{U - V}_\infty$ for all $U, V$.<br>
+    By Banach's fixed-point theorem, $\Vpi$ is the <b>unique</b> fixed point, and $V_{k+1} = \Tpi V_k$ converges to it from any $V_0$.
+  </div>
+  <aside class="notes">Proof on the board: |T U(s) − T V(s)| = γ |Σ_a π Σ_s' P (U−V)(s')| ≤ γ ‖U−V‖∞. This proposition is the backbone of all of DP, and of fitted-Q later in the course.</aside>
+</section>
+
+<section class="slide">
+  <h2>Optimal value functions</h2>
+  <div class="box definition"><span class="box-title">Definition</span>
+    $$\Vstar(s) = \max_\pi \Vpi(s), \qquad \Qstar(s,a) = \max_\pi \Qpi(s,a)$$
+    A policy $\pistar$ is <b>optimal</b> if $V^{\pistar}(s) = \Vstar(s)$ for <em>all</em> $s$.
+  </div>
+  <div class="box discuss fragment"><span class="box-title">Discuss</span>
+    $\Vstar(s)$ is a maximum taken <b>separately for each state</b>. Could the best policy when starting from $s_1$ differ from the best one when starting from $s_6$? Is there a single policy that is best <b>everywhere at once</b>?</div>
+  <p class="small fragment">Not obvious a priori. For MDPs the answer is yes: see the next slide.</p>
+</section>
+
+<section class="slide">
+  <h2>Bellman optimality equation</h2>
+  <div class="eq-big">
+  $$\Vstar(s) = \max_{a} \Big( r(s,a) + \gamma \sum_{s'} P(s' \mid s,a)\, \Vstar(s') \Big) = \max_a \Qstar(s,a)$$
+  </div>
+  <div class="box definition"><span class="box-title">Optimal Bellman operator</span>
+    $(\Tstar V)(s) = \max_a \big( r(s,a) + \gamma \sum_{s'} P(s' \mid s,a) V(s') \big)$ &nbsp;— also a $\gamma$-contraction.
+  </div>
+  <ul>
+    <li class="fragment"><b>Non-linear</b> (because of the max): no closed form in general</li>
+    <li class="fragment">Solve iteratively: value iteration, policy iteration (today), Q-learning, SARSA (Chris, in two weeks)</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Fundamental theorem of MDPs</h2>
+  <div class="box theorem"><span class="box-title">Theorem</span>
+    For a finite discounted MDP:
+    <ol>
+      <li>There is a unique $\Vstar$ with $\Tstar \Vstar = \Vstar$.</li>
+      <li>There exists an optimal policy that is <b>stationary and deterministic</b>.</li>
+      <li>A policy is optimal <b>iff</b> it is greedy w.r.t. $\Qstar$:
+        $\;\pistar(s) \in \argmax_a \Qstar(s,a)$.</li>
+    </ol>
+  </div>
+  <p class="fragment">So we only need to compute $\Vstar$ (or $\Qstar$); acting greedily then gives an optimal policy.</p>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Maze</span>$\Vstar$ and $\pistar$ depend on $\gamma$</h2>
+  <div class="cols">
+    <figure><div class="maze vertical" data-policy="optimal" data-values="exact" data-arrows="policy" data-gamma="0.9" data-size="380"></div><figcaption>$\gamma = 0.9$</figcaption></figure>
+    <figure><div class="maze vertical" data-policy="optimal" data-values="exact" data-arrows="policy" data-gamma="0.5" data-size="380"></div><figcaption>$\gamma = 0.5$</figcaption></figure>
+  </div>
+  <aside class="notes">Several arrows in one cell = ties (all greedy actions are optimal). At γ=0.5 the left part heads to the small exit, while s3, s4, s6, s7, s10 still go big.</aside>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Maze</span>Play with $\gamma$</h2>
+  <div class="maze" data-policy="optimal" data-values="exact" data-arrows="policy" data-gamma="0.67" data-size="440" data-controls="gamma" data-click="backup"></div>
+  <aside class="notes">Slide γ across 0.669 and watch s1 switch. Then find the switching point of s5 (adjacent to the small exit).</aside>
+</section>
+
+<section class="slide center no-footer" style="justify-content:center">
+  <h2 style="font-size:64px">Questions?</h2>
+  <p class="muted">5-minute break</p>
+</section>
+
+<!-- =====================================================================
+     4 · DYNAMIC PROGRAMMING
+     ===================================================================== -->
+<section class="slide section">
+  <div class="num">Part 4</div>
+  <h2>Dynamic programming</h2>
+  <p>Turn the Bellman equations into algorithms.</p>
+</section>
+
+<section class="slide">
+  <h2>What is dynamic programming?</h2>
+  <ul>
+    <li><b>Dynamic</b>: sequential problem. <b>Programming</b>: optimising a "program", i.e. a policy (Bellman, 1957)</li>
+    <li class="fragment">Applies to problems with
+      <ul>
+        <li><b>optimal substructure</b>: an optimal solution is built from optimal solutions to subproblems</li>
+        <li><b>overlapping subproblems</b>: solutions can be cached and reused</li>
+      </ul></li>
+    <li class="fragment">MDPs have both: Bellman equations give the recursion, and the value function is the cache</li>
+  </ul>
+  <div class="box theorem fragment"><span class="box-title">Requires</span>Full knowledge of the MDP: $P$ and $r$.</div>
+</section>
+
+<section class="slide">
+  <h2>Policy evaluation (prediction)</h2>
+  <p><b>Problem</b>: given $\pi$, compute $\Vpi$. <b>Idea</b>: iterate the Bellman operator.</p>
+  <div class="box algo"><span class="box-title">Iterative policy evaluation</span>
+    <ol>
+      <li>Initialise $V_0(s) = 0$ for all $s$</li>
+      <li>For $k = 0, 1, 2, \dots$: &nbsp; $V_{k+1} = \Tpi V_k$, i.e. for every $s$,
+        $$V_{k+1}(s) = \sum_a \pi(a|s)\Big(r(s,a) + \gamma \sum_{s'} P(s'|s,a)\, V_k(s')\Big)$$</li>
+      <li>Stop when $\norm{V_{k+1} - V_k}_\infty$ is small</li>
+    </ol>
+  </div>
+  <p class="fragment">Convergence: $\norm{V_k - \Vpi}_\infty \le \gamma^k \norm{V_0 - \Vpi}_\infty$, by contraction.</p>
+</section>
+
+<section class="slide practice-slide">
+  <h2>Let's practice: policy evaluation by hand</h2>
+  <div class="cols c-40-60">
+    <div class="maze" data-values="iterate" data-algo="pe" data-policy="uniform" data-gamma="0.9" data-size="380" data-controls="step,reset" data-click="backup" data-info="#info-pe"></div>
+    <div>
+      <p>$\pi_{\text{unif}}$, $\gamma = 0.9$, $V_0 = 0$.</p>
+      <ol class="small">
+        <li>Compute $V_1$: which states change? (Only neighbours of an exit.)</li>
+        <li>Compute $V_2(s_7)$ and $V_2(s_{10})$ by hand.</li>
+        <li>Press <b>Step</b> to check; click a state for its backup.</li>
+      </ol>
+      <div id="info-pe"></div>
+    </div>
+  </div>
+  <aside class="notes">V1(s10)=5/4=1.25; V1 of small-exit neighbours = 1/4. V2(s10) = ¼(5 + 0.9·1.25 + 0.9·0 + 0.9·1.25) = 1.8125. Then press Run ×10 to show convergence to the earlier values.</aside>
+</section>
+
+<section class="slide">
+  <h2>Policy improvement</h2>
+  <p>Given $\Vpi$, act <b>greedily</b>:
+    $$\pi'(s) \in \argmax_a \Qpi(s,a) = \argmax_a \Big( r(s,a) + \gamma \sum_{s'} P(s'|s,a)\, \Vpi(s') \Big)$$</p>
+  <div class="box theorem fragment"><span class="box-title">Policy improvement theorem</span>
+    If $\Qpi(s, \pi'(s)) \ge \Vpi(s)$ for all $s$, then $V^{\pi'}(s) \ge \Vpi(s)$ for all $s$.
+  </div>
+  <p class="fragment">If the improvement stops ($\pi' = \pi$), then $\Vpi$ satisfies the Bellman <em>optimality</em> equation, so $\pi$ is optimal.</p>
+  <p class="small muted">Proof: see the <b>self-study</b> section at the end.</p>
+</section>
+
+<section class="slide">
+  <h2>Policy iteration</h2>
+  <div class="cols c-60-40 middle">
+    <div class="box algo"><span class="box-title">Policy iteration</span>
+      <ol>
+        <li>Start from any policy $\pi_0$</li>
+        <li><b>Evaluate</b>: compute $V^{\pi_k}$ (exactly, or by iterative policy evaluation)</li>
+        <li><b>Improve</b>: $\pi_{k+1} = \text{greedy}(V^{\pi_k})$</li>
+        <li>Repeat until $\pi_{k+1} = \pi_k$</li>
+      </ol>
+    </div>
+    <div>
+      <p>$\pi_0 \xrightarrow{E} V^{\pi_0} \xrightarrow{I} \pi_1 \xrightarrow{E} V^{\pi_1} \xrightarrow{I} \cdots \to \pistar$</p>
+      <p class="fragment small">Terminates in finitely many steps: there are finitely many deterministic policies, and each step strictly improves until optimal.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Maze</span>Policy iteration from the random policy</h2>
+  <div class="maze" data-values="iterate" data-algo="pi" data-policy="uniform" data-arrows="policy" data-gamma="0.9" data-size="440" data-controls="step,reset"></div>
+  <aside class="notes">How many improvement steps until stable? Usually 2–3. Compare with value iteration next.</aside>
+</section>
+
+<section class="slide">
+  <h2>Value iteration</h2>
+  <p><b>Idea</b>: skip full evaluation and iterate the <em>optimal</em> Bellman operator directly.</p>
+  <div class="box algo"><span class="box-title">Value iteration</span>
+    <ol>
+      <li>Initialise $V_0(s) = 0$ for all $s$</li>
+      <li>For $k = 0, 1, 2, \dots$: &nbsp; $V_{k+1} = \Tstar V_k$, i.e.
+        $$V_{k+1}(s) = \max_a \Big(r(s,a) + \gamma \sum_{s'} P(s'|s,a)\, V_k(s')\Big)$$</li>
+      <li>Return the greedy policy w.r.t. the final $V_k$</li>
+    </ol>
+  </div>
+  <p class="fragment">Converges to $\Vstar$ at rate $\gamma^k$. You can view it as policy iteration with one sweep of evaluation per improvement.</p>
+</section>
+
+<section class="slide practice-slide">
+  <h2>Let's practice: value iteration by hand</h2>
+  <div class="cols c-40-60">
+    <div class="maze" data-values="iterate" data-algo="vi" data-gamma="0.9" data-arrows="greedy" data-size="380" data-controls="step,run,reset" data-click="backup" data-info="#info-vi"></div>
+    <div>
+      <p>$\gamma = 0.9$, $V_0 = 0$. Compute $V_1, V_2, V_3$.</p>
+      <ul class="small">
+        <li class="fragment">$V_1$: $1$ next to the small exit, $5$ at $s_{10}$, $0$ elsewhere</li>
+        <li class="fragment">$V_2(s_7) = \max(\dots, 0 + 0.9 \cdot 5) = 4.5$</li>
+        <li class="fragment">When does $s_1$ first "see" the big exit? After how many iterations is its greedy action final?</li>
+      </ul>
+      <div id="info-vi"></div>
+    </div>
+  </div>
+  <aside class="notes">Information travels one cell per iteration. s1 is 6 steps from the big exit: V_k(s1) jumps to 5γ^5 at k=6. Until then its greedy action points towards the small exit, a good discussion point about stopping too early.</aside>
+</section>
+
+<section class="slide">
+  <h2>Value iteration vs policy iteration</h2>
+  <table>
+    <tr><th></th><th>Value iteration</th><th>Policy iteration</th></tr>
+    <tr><td>Per iteration</td><td>one sweep of $\Tstar$: $O(|\S|^2|\A|)$</td><td>full evaluation $O(|\S|^3)$ + improvement</td></tr>
+    <tr><td>Iterations</td><td>many (rate $\gamma^k$)</td><td>few (finite, often very few)</td></tr>
+    <tr><td>Intermediate $V_k$</td><td>not the value of any policy</td><td>always $V^{\pi_k}$</td></tr>
+  </table>
+  <div class="box theorem fragment" style="margin-top:22px"><span class="box-title">Stopping rule for VI</span>
+    If $\norm{V_{k+1} - V_k}_\infty < \varepsilon\frac{1-\gamma}{2\gamma}$, the greedy policy w.r.t. $V_{k+1}$ is $\varepsilon$-optimal.</div>
+  <p class="small muted">Puterman (1994), Thm 6.3.1. Proof and discussion: <b>self-study</b> section at the end.</p>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Optional</span>Generalised policy iteration</h2>
+  <div class="cols middle">
+    <svg viewBox="0 0 420 300" width="420" height="300" aria-label="GPI: evaluation and improvement interleaved">
+      <defs><marker id="g1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" fill="#2f5a24"/></marker>
+            <marker id="g2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" fill="#b5541c"/></marker></defs>
+      <text x="70" y="155" font-size="40" font-weight="700" text-anchor="middle">π</text>
+      <text x="350" y="155" font-size="40" font-weight="700" text-anchor="middle">V</text>
+      <path d="M100 120 C 170 50, 250 50, 320 120" fill="none" stroke="#2f5a24" stroke-width="3" marker-end="url(#g1)"/>
+      <path d="M320 175 C 250 245, 170 245, 100 175" fill="none" stroke="#b5541c" stroke-width="3" marker-end="url(#g2)"/>
+      <text x="210" y="50" font-size="20" text-anchor="middle" fill="#2f5a24">evaluation: V → V<tspan dy="-8" font-size="14">π</tspan></text>
+      <text x="210" y="270" font-size="20" text-anchor="middle" fill="#b5541c">improvement: π → greedy(V)</text>
+    </svg>
+    <div>
+      <ul>
+        <li>Any interleaving of (partial) evaluation and (partial) improvement</li>
+        <li>VI and PI are the two extremes</li>
+        <li>Almost every RL algorithm in this course is GPI with <b>approximate</b> evaluation: MC, TD, SARSA, Q-learning, actor-critic</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Summary</h2>
+  <table>
+    <tr><th>Problem</th><th>Bellman equation</th><th>Algorithm</th></tr>
+    <tr><td>Prediction</td><td>Expectation: $\Vpi = \Tpi \Vpi$</td><td>Iterative policy evaluation</td></tr>
+    <tr><td>Control</td><td>Expectation + greedy improvement</td><td>Policy iteration</td></tr>
+    <tr><td>Control</td><td>Optimality: $\Vstar = \Tstar \Vstar$</td><td>Value iteration</td></tr>
+  </table>
+  <ul style="margin-top:24px" class="small">
+    <li>All methods here are <b>synchronous</b>: every state is updated in each sweep. Asynchronous variants update states in any order.</li>
+    <li>They all need the model and touch every state, which breaks down for large $\S$ and unknown $P$.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Next time: Model-free prediction</h2>
+  <p>What if we <b>don't know</b> $P$ and $r$, and can only <b>sample</b> trajectories in the maze?</p>
+  <ul>
+    <li>Monte Carlo: average sampled returns</li>
+    <li>Temporal differences: bootstrap from $\gamma V(S_{t+1})$</li>
+  </ul>
+  <p class="small muted">Same maze, same $\gamma$. We will compare with the exact values computed today.</p>
+</section>
+
+<!-- =====================================================================
+     SELF-STUDY: PROOFS
+     ===================================================================== -->
+<section class="slide section">
+  <div class="num">Self-study</div>
+  <h2>Proofs</h2>
+  <p>Not covered in class. Everything follows from two properties of the Bellman operators: monotonicity and contraction.</p>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Self-study</span>Two tools</h2>
+  <p class="small">Inequalities between value functions are pointwise: $U \le V$ means $U(s) \le V(s)$ for all $s$.</p>
+  <div class="box theorem small"><span class="box-title">Lemma 1: monotonicity</span>
+    If $U \le V$, then $\Tpi U \le \Tpi V$ and $\Tstar U \le \Tstar V$.
+    <p class="tiny" style="margin:4px 0 0">Proof: $(\Tpi V)(s) = \sum_a \pi(a|s)\big(r(s,a) + \gamma \sum_{s'} P(s'|s,a) V(s')\big)$ only adds up $V$ with non-negative weights. For $\Tstar$, a maximum of larger terms is larger.</p>
+  </div>
+  <div class="box theorem small"><span class="box-title">Lemma 2: contraction (from the lecture)</span>
+    $\norm{\Tpi U - \Tpi V}_\infty \le \gamma \norm{U - V}_\infty$, and the same for $\Tstar$. Hence $(\Tpi)^k V \to \Vpi$ and $(\Tstar)^k V \to \Vstar$ for any $V$.
+    <p class="tiny" style="margin:4px 0 0">For $\Tstar$, use $|\max_a f(a) - \max_a g(a)| \le \max_a |f(a) - g(a)|$.</p>
+  </div>
+  <div class="box definition small"><span class="box-title">Greedy policies</span>
+    If $\pi'$ is greedy w.r.t. $V$, i.e. $\pi'(s) \in \argmax_a \big(r(s,a) + \gamma \sum_{s'} P(s'|s,a) V(s')\big)$, then
+    $$T^{\pi'} V = \Tstar V \;\ge\; \Tpi V \quad \text{for every policy } \pi.$$
+  </div>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Self-study</span>Proof of the policy improvement theorem</h2>
+  <p class="small">Let $\pi'$ be greedy w.r.t. $\Vpi$. (More generally, assume $\Qpi(s,\pi'(s)) \ge \Vpi(s)$ for all $s$, i.e. $T^{\pi'}\Vpi \ge \Vpi$.)</p>
+  <div class="eq-big">$$T^{\pi'} \Vpi \;=\; \Tstar \Vpi \;\ge\; \Tpi \Vpi \;=\; \Vpi$$</div>
+  <p class="small fragment">Apply $T^{\pi'}$ on both sides and use monotonicity (Lemma 1), again and again:</p>
+  <div class="fragment">$$\Vpi \;\le\; T^{\pi'}\Vpi \;\le\; (T^{\pi'})^2 \Vpi \;\le\; \cdots \;\le\; (T^{\pi'})^k \Vpi \;\xrightarrow[k \to \infty]{}\; V^{\pi'} \quad \text{(Lemma 2)}$$</div>
+  <p class="fragment">Hence $V^{\pi'} \ge \Vpi$. $\quad\blacksquare$</p>
+  <div class="box discuss fragment tiny" style="font-size:17px"><span class="box-title">Same proof, unrolled ("telescoping", as in Sutton &amp; Barto §4.2)</span>
+    $\Vpi(s) \le \Qpi(s, \pi'(s)) = \E_{\pi'}[R_{t+1} + \gamma \Vpi(S_{t+1}) \mid S_t = s] \le \E_{\pi'}[R_{t+1} + \gamma R_{t+2} + \gamma^2 \Vpi(S_{t+2}) \mid S_t = s] \le \cdots \le V^{\pi'}(s)$
+  </div>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Self-study</span>Policy iteration ends with an optimal policy</h2>
+  <p class="small">Let $\pi_{k+1}$ be greedy w.r.t. $V^{\pi_k}$. By the improvement theorem, $V^{\pi_{k+1}} \ge V^{\pi_k}$.</p>
+  <div class="box theorem small fragment"><span class="box-title">If there is no improvement, the policy is optimal</span>
+    Suppose $V^{\pi_{k+1}} = V^{\pi_k}$. Then
+    $$V^{\pi_k} = V^{\pi_{k+1}} = T^{\pi_{k+1}} V^{\pi_{k+1}} = T^{\pi_{k+1}} V^{\pi_k} = \Tstar V^{\pi_k}$$
+    so $V^{\pi_k}$ is the fixed point of $\Tstar$: $V^{\pi_k} = \Vstar$ and $\pi_k$ is optimal.
+  </div>
+  <div class="box theorem small fragment"><span class="box-title">Otherwise, it strictly improves, so it stops</span>
+    If $V^{\pi_{k+1}} \ne V^{\pi_k}$, then $V^{\pi_{k+1}} \ge V^{\pi_k}$ with a strict inequality in some state. The sequence of value functions never repeats, and there are only $|\A|^{|\S|}$ deterministic policies. So policy iteration stops after finitely many steps, at an optimal policy. $\quad\blacksquare$
+  </div>
+  <p class="tiny fragment">In practice: break ties consistently (keep the current action if it is still greedy) and stop when the policy no longer changes.</p>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Self-study</span>When can value iteration stop?</h2>
+  <div class="box theorem small"><span class="box-title">Theorem (Puterman 1994, Thm 6.3.1)</span>
+    If $\norm{V_{k+1} - V_k}_\infty < \varepsilon \frac{1-\gamma}{2\gamma}$, and $\pi$ is greedy w.r.t. $V_{k+1}$, then $\;\norm{V^\pi - \Vstar}_\infty \le \varepsilon$: the policy is <b>$\varepsilon$-optimal</b>.
+  </div>
+  <div class="cols">
+    <div>
+      <h3 style="font-size:24px">What it says</h3>
+      <ul class="small">
+        <li>A guarantee on the <b>loss of the policy</b> we output, measured on its true value $V^\pi$</li>
+        <li>Computable: only uses two consecutive iterates</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="font-size:24px">What it does not say</h3>
+      <ul class="small">
+        <li>That $\pi$ is exactly optimal, or that the greedy policy will not change any more</li>
+        <li>Finitely many policies, so a small enough $\varepsilon$ gives exact optimality, but that threshold depends on unknown value gaps</li>
+      </ul>
+    </div>
+  </div>
+  <div class="box discuss small fragment"><span class="box-title">In the maze ($\gamma = 0.9$, $\varepsilon = 0.1$, threshold $\approx 0.0056$)</span>
+    Deterministic: the rule stops at $k = 11$; the greedy policy was already optimal from $k = 8$.<br>
+    Slippery: stops at $k = 20$; the greedy policy was optimal from $k = 13$. The rule is <b>conservative</b>.
+  </div>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Self-study</span>Proof of the stopping rule</h2>
+  <p class="small">Write $V' = V_{k+1} = \Tstar V_k$, $\;\Delta = \norm{V' - V_k}_\infty$, and $\pi$ greedy w.r.t. $V'$, so $\Tpi V' = \Tstar V'$. Split the error:
+    $\;\norm{V^\pi - \Vstar} \le \norm{V^\pi - V'} + \norm{V' - \Vstar}$.</p>
+  <div class="box theorem small fragment"><span class="box-title">(1) The estimate is close to $\Vstar$</span>
+    $\norm{V' - \Vstar} = \norm{\Tstar V_k - \Tstar \Vstar} \le \gamma \norm{V_k - \Vstar} \le \gamma\big(\Delta + \norm{V' - \Vstar}\big)$
+    $\;\Rightarrow\; \norm{V' - \Vstar} \le \dfrac{\gamma}{1-\gamma}\,\Delta$
+  </div>
+  <div class="box theorem small fragment"><span class="box-title">(2) The greedy policy's value is close to the estimate</span>
+    $V^\pi - V' = \big(\Tpi V^\pi - \Tpi V'\big) + \big(\Tstar V' - \Tstar V_k\big)$, $\;$ so $\;\norm{V^\pi - V'} \le \gamma \norm{V^\pi - V'} + \gamma \Delta$<br>
+    $\Rightarrow\; \norm{V^\pi - V'} \le \dfrac{\gamma}{1-\gamma}\,\Delta$
+  </div>
+  <p class="fragment">Together: $\;\norm{V^\pi - \Vstar} \le \dfrac{2\gamma}{1-\gamma}\,\Delta < \varepsilon \;$ as soon as $\;\Delta < \varepsilon\dfrac{1-\gamma}{2\gamma}$. $\quad\blacksquare$</p>
+  <p class="tiny fragment">Bonus from (1): the value estimate itself is then within $\varepsilon/2$ of $\Vstar$.</p>
+</section>
+
+<section class="slide">
+  <h2>References</h2>
+  <ul class="small">
+    <li>R. Sutton, A. Barto. <i>Reinforcement Learning: An Introduction</i>, 2nd ed., 2018. Chapters 3–4.</li>
+    <li>M. Puterman. <i>Markov Decision Processes</i>, 1994. Chapter 6 (Thm 6.3.1: stopping rule for value iteration).</li>
+    <li>Cs. Szepesvári. <i>Algorithms for Reinforcement Learning</i>, 2010.</li>
+    <li>D. Silver. UCL RL course, Lectures 2–3.</li>
+    <li>G. Martius, P. Kolev. RL Lecture 2, Universität Tübingen, 2026.</li>
+    <li>A. Karpathy. REINFORCEjs GridWorld DP demo.</li>
+  </ul>
+</section>
+
+</main>
+
+<script src="../assets/katex/katex.min.js"></script>
+<script src="../assets/katex/auto-render.min.js"></script>
+<script src="../assets/macros.js"></script>
+<script src="../assets/maze.js"></script>
+<script src="../assets/deck.js"></script>
+</body>
+</html>

@@ -281,7 +281,7 @@ sass:
 # -----------------------------------------------------------------------------
 
 jekyll-minifier:
-  exclude: ["robots.txt", "assets/js/search/*.js"]
+  exclude: ["robots.txt", "assets/js/search/*.js", "assets/teaching/rl-utn/assets/learn.js"]
   uglifier_args:
     harmony: true
 

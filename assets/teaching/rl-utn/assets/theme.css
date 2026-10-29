@@ -142,6 +142,12 @@ body {
 .green {
   color: var(--accent);
 }
+.hl {
+  background: #fff2a8;
+  padding: 0 5px;
+  border-radius: 4px;
+  font-weight: 700;
+}
 .orange {
   color: var(--warm);
 }
@@ -402,6 +408,11 @@ body.hide-todo .todo {
 /* math */
 .katex {
   font-size: 1.05em;
+}
+/* Keep each inline formula together rather than splitting it across lines. */
+.slide .katex,
+.slide .katex .base {
+  white-space: nowrap;
 }
 .katex-display {
   margin: 0.5em 0;

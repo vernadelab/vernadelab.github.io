@@ -386,7 +386,7 @@
     const Y = y => pad.t + (1 - (Math.max(ymin, Math.min(ymax, y)) - ymin) / (ymax - ymin)) * (H - pad.t - pad.b);
     let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="learn-svg">`;
     svg += `<text x="${pad.l}" y="16" font-size="15" fill="#1b1d1a" font-weight="700">${opts.title}</text>`;
-    for (let i = 0; i <= 4; i++) { const y = ymin + (ymax - ymin) * i / 4; svg += `<line x1="${pad.l}" x2="${W - pad.r}" y1="${Y(y)}" y2="${Y(y)}" stroke="#e4e4dc"/><text x="${pad.l - 6}" y="${Y(y) + 5}" text-anchor="end" font-size="13" fill="#8a9086">${y.toFixed(opts.dec ?? 1)}</text>`; }
+    for (let i = 0; i <= 4; i++) { const y = ymin + (ymax - ymin) * i / 4; svg += `<line x1="${pad.l}" x2="${W - pad.r}" y1="${Y(y)}" y2="${Y(y)}" stroke="#e4e4dc"/><text x="${pad.l - 6}" y="${Y(y) + 5}" text-anchor="end" font-size="13" fill="#8a9086">${y.toFixed(opts.dec == null ? 1 : opts.dec)}</text>`; }
     (opts.xticks || []).forEach(x => svg += `<text x="${X(x)}" y="${H - pad.b + 18}" text-anchor="middle" font-size="13" fill="#8a9086">${x}</text>`);
     svg += `<text x="${(W + pad.l) / 2}" y="${H - 6}" text-anchor="middle" font-size="14" fill="#4a4f47">episodes</text>`;
     lines.forEach((l, i) => {

@@ -1,0 +1,830 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Model-Free Prediction</title>
+<link rel="stylesheet" href="../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../assets/theme.css">
+</head>
+<body data-lecture="RL · Lecture 3 · Model-Free Prediction" data-author="Claire Vernade">
+<main class="deck">
+
+<!-- =====================================================================
+     0 · TITLE & PLAN
+     ===================================================================== -->
+<section class="slide title-slide">
+  <h1>Model-Free Prediction</h1>
+  <div class="subtitle">Reinforcement Learning · Lecture 3</div>
+  <div class="author">Claire Vernade</div>
+  <div class="affil">University of Technology Nuremberg</div>
+  <div class="date">29 October 2026</div>
+</section>
+
+<section class="slide">
+  <h2>Organisation</h2>
+  <ul>
+    <li><b>Group assignments</b> are done and fixed.</li>
+    <li><b>Presentations</b>: what we expect</li>
+    <li><b>Guest lecture</b> in the week of <b>17 December</b>: what is your availability?</li>
+    <li>This course will be given <b>again next semester</b>.</li>
+  </ul>
+  <aside class="notes">Expectations for the presentations: to be filled in.</aside>
+</section>
+
+<section class="slide">
+  <h2>Today</h2>
+  <div class="cols c-60-40 middle">
+    <ol>
+      <li><b>Recap</b>: Bellman equations, value iteration and policy iteration</li>
+      <li><b>From planning to learning</b>: what if we don't know $P$ and $r$?</li>
+      <li><b>Monte Carlo</b> prediction</li>
+      <li><b>Temporal-difference</b> prediction and bootstrapping</li>
+      <li><b>Bias vs. variance</b>, and TD($\lambda$) in between</li>
+    </ol>
+    <div class="box theorem"><span class="box-title">Today's question</span>
+      The policy $\pi$ is <b>fixed</b>. Can we estimate $\Vpi$ from <b>experience alone</b>?</div>
+  </div>
+</section>
+
+<!-- =====================================================================
+     1 · RECAP
+     ===================================================================== -->
+<section class="slide section">
+  <div class="num">Part 1</div>
+  <h2>Recap: planning with a model</h2>
+  <p>Same maze, same notation as last week.</p>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Recap</span>The two-exit maze and its optimal values</h2>
+  <div class="cols c-40-60">
+    <figure><div class="maze vertical" data-policy="optimal" data-values="exact" data-arrows="policy" data-gamma="0.9" data-size="400"></div><figcaption>$\Vstar$ and $\pistar$ for $\gamma = 0.9$</figcaption></figure>
+    <div>
+      <p class="small">Deterministic moves. Exits: $+1$ (close), $+5$ (far). All other rewards $0$.</p>
+      <div class="box theorem"><span class="box-title">Bellman optimality equation</span>
+        $$\Vstar(s) = \max_a \Big( r(s,a) + \gamma \sum_{s'} P(s' \mid s,a)\, \Vstar(s') \Big)$$
+        $\pistar$ is greedy w.r.t. $\Vstar$.
+      </div>
+      <p class="small fragment">At $\gamma = 0.9$ the far exit is worth it from everywhere: $V^\star(s_1) = 5\gamma^5 \approx 2.95$.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Recap</span>Value iteration and policy iteration</h2>
+  <div class="cols" style="grid-template-columns: 1fr 1fr">
+    <div class="box algo" style="min-width:0; font-size:21px"><span class="box-title">Value iteration</span>
+      <ol>
+        <li>$V_0 = 0$</li>
+        <li>Repeat, for all $s$:
+          $$V_{k+1}(s) = \max_a \Big( \textcolor{#b5541c}{r(s,a)} + \gamma \sum_{s'} \textcolor{#b5541c}{P(s'|s,a)}\, V_k(s') \Big)$$</li>
+        <li>Act greedily w.r.t. the last $V_k$</li>
+      </ol>
+    </div>
+    <div class="box algo" style="min-width:0; font-size:21px"><span class="box-title">Policy iteration</span>
+      <ol>
+        <li>Start from any $\pi_0$</li>
+        <li><b>Evaluate</b>:
+          $$V^{\pi_k} = \textcolor{#b5541c}{r^{\pi_k}} + \gamma\, \textcolor{#b5541c}{P^{\pi_k}}\, V^{\pi_k}$$</li>
+        <li><b>Improve</b>, for all $s$:
+          $$\pi_{k+1}(s) = \argmax_a \big( \textcolor{#b5541c}{r(s,a)} + \gamma \textstyle\sum_{s'} \textcolor{#b5541c}{P(s'|s,a)}\, V^{\pi_k}(s') \big)$$</li>
+      </ol>
+    </div>
+  </div>
+  <div class="box practice fragment"><span class="box-title">Both need the model</span>
+    Every update uses $\textcolor{#b5541c}{P}$ and $\textcolor{#b5541c}{r}$ explicitly. So far we did <b>pure planning</b>.</div>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Recap</span>VI and PI side by side</h2>
+  <div class="cols">
+    <figure><div class="maze vertical" data-values="iterate" data-algo="vi" data-gamma="0.9" data-arrows="greedy" data-size="330" data-controls="step,run,reset" data-labels="none"></div><figcaption>Value iteration: one sweep of $\Tstar$ per step</figcaption></figure>
+    <figure><div class="maze vertical" data-values="iterate" data-algo="pi" data-policy="uniform" data-gamma="0.9" data-arrows="policy" data-size="330" data-controls="step,reset" data-labels="none"></div><figcaption>Policy iteration: evaluate, then improve</figcaption></figure>
+  </div>
+  <aside class="notes">Quick reminder only. VI needs about 6 sweeps before s1 "sees" the big exit; PI is stable after about 3 evaluate/improve rounds.</aside>
+</section>
+
+<section class="slide">
+  <h2>From planning to learning</h2>
+  <div class="cols c-60-40 middle">
+    <div>
+      <p>Someone gives you a <b>policy</b> $\pi$: a direction to take in every cell (right).</p>
+      <p class="fragment">But you know <b>nothing about the world</b>: not $P$, not $r$. You don't know where the exits are or what they pay.</p>
+      <p class="fragment">All you can do is <b>follow $\pi$</b> and <b>observe</b>:
+        $$S_0, A_0, R_1, S_1, A_1, R_2, \dots, S_{T-1}, A_{T-1}, R_T$$</p>
+      <div class="box discuss fragment"><span class="box-title">Discuss with your neighbour</span>
+        How can you find out how good this policy is, starting from each cell?</div>
+    </div>
+    <figure><div class="maze vertical" data-values="none" data-policy="optimal-det" data-arrows="policy" data-size="300" data-labels="none"></div>
+      <figcaption>The policy you are given</figcaption></figure>
+  </div>
+  <aside class="notes">Let them come up with "try it many times and average": that is Monte Carlo. Someone may suggest "remember how good the next cell was": that is TD.</aside>
+</section>
+
+<section class="slide">
+  <h2>Reinforcement learning<br>= generalised policy iteration from data</h2>
+  <div class="cols middle">
+    <svg viewBox="0 0 440 300" width="440" height="300" aria-label="GPI: evaluation from data, then improvement">
+      <defs><marker id="l3g1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" fill="#2f5a24"/></marker>
+            <marker id="l3g2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" fill="#b5541c"/></marker></defs>
+      <text x="70" y="160" font-size="42" font-weight="700" text-anchor="middle">π</text>
+      <text x="370" y="160" font-size="42" font-weight="700" text-anchor="middle">V̂</text>
+      <path d="M100 120 C 180 40, 260 40, 340 120" fill="none" stroke="#2f5a24" stroke-width="3.5" marker-end="url(#l3g1)"/>
+      <path d="M340 180 C 260 260, 180 260, 100 180" fill="none" stroke="#b5541c" stroke-width="3.5" marker-end="url(#l3g2)"/>
+      <text x="220" y="36" font-size="20" text-anchor="middle" fill="#2f5a24">evaluation: estimate V̂ ≈ V<tspan baseline-shift="super" font-size="14">π</tspan> from data</text>
+      <text x="220" y="290" font-size="20" text-anchor="middle" fill="#b5541c">improvement: π ← (more) greedy w.r.t. V̂</text>
+      <rect x="160" y="128" width="120" height="44" rx="8" fill="#eef3e6" stroke="#2f5a24"/>
+      <text x="220" y="156" font-size="18" text-anchor="middle" fill="#2f5a24">TODAY</text>
+    </svg>
+    <div>
+      <ul>
+        <li><b>Policy evaluation</b>: estimate the current value function <em>using data</em></li>
+        <li><b>Policy improvement</b>: update the policy <em>gradually</em> towards the greedy one</li>
+        <li class="fragment">Today: <b>evaluation only</b> (prediction). The policy is fixed.</li>
+        <li class="fragment">Next week (Chris): improvement, i.e. control. SARSA and Q-learning.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Today's setting: a fixed policy</h2>
+  <div class="cols c-40-60">
+    <figure><div class="maze vertical" data-policy="egreedy" data-eps="0.2" data-values="exact" data-arrows="policy" data-gamma="0.9" data-size="390"></div><figcaption>$\pi$ and its true value $\Vpi$ (hidden from the agent!)</figcaption></figure>
+    <div>
+      <p>$\pi$: with probability $0.8$ follow $\pistar$, with probability $0.2$ pick a random action.</p>
+      <ul class="small">
+        <li>Not optimal, not random: an arbitrary fixed policy</li>
+        <li>Episodes start in $s_1$, $\gamma = 0.9$</li>
+        <li>We know $\Vpi$ because <i>we</i> know the model, so we can check the agent's estimates</li>
+      </ul>
+      <div class="box theorem"><span class="box-title">Goal (prediction)</span>
+        From episodes generated by $\pi$, estimate $\Vpi(s) = \E_\pi[G_t \mid S_t = s]$.</div>
+    </div>
+  </div>
+  <aside class="notes">Chris will introduce ε-greedy properly next week. Here it's only "some fixed policy". Thin arrows = the random 5% per action.</aside>
+</section>
+
+<!-- =====================================================================
+     2 · MONTE CARLO
+     ===================================================================== -->
+<section class="slide section">
+  <div class="num">Part 2</div>
+  <h2>Monte Carlo prediction</h2>
+  <p>A value is an expectation, so estimate it by an average.</p>
+</section>
+
+<section class="slide">
+  <h2>Monte Carlo: the idea</h2>
+  <div>$$\Vpi(s) = \E_\pi\big[\,G_t \mid S_t = s\,\big] \quad\approx\quad \frac{1}{N(s)} \sum_{i=1}^{N(s)} G^{(i)}(s)$$</div>
+  <ul style="margin-bottom:8px">
+    <li>Play an episode with $\pi$ until it terminates</li>
+    <li>For each state visited, compute <span class="hl">the return that followed, from this state on</span>: $\;G_t = R_{t+1} + \gamma R_{t+2} + \dots + \gamma^{T-t-1} R_T$</li>
+    <li>Average these returns over episodes. By the law of large numbers this converges to $\Vpi(s)$.</li>
+  </ul>
+  <div class="cols fragment" style="margin-top:0; gap:28px">
+    <div class="box practice small" style="margin:0"><span class="box-title">Requires</span>
+      Episodes that <b>end</b>: we need the whole return $G_t$ before we can update.</div>
+    <div class="box theorem small" style="margin:0"><span class="box-title">Does not need</span>
+      <b>No model</b> ($P$, $r$ unknown), <b>no Bellman equation</b>, not even the <b>Markov property</b>: we only average returns we observed.</div>
+  </div>
+</section>
+
+<section class="slide practice-slide">
+  <h2>Let's practice: returns of two episodes</h2>
+  <div class="cols" style="grid-template-columns: 1.35fr 1fr; gap: 32px">
+    <div style="min-width:0">
+      <p class="small" style="margin-bottom:6px">$\gamma = 0.9$. Backwards: $\;G_t = R_{t+1} + \gamma\, G_{t+1}$, $\;G_T = 0$.</p>
+      <div class="cols" style="grid-template-columns: 1.3fr 1fr; gap: 18px">
+        <table class="ep-table">
+          <tr><th colspan="4" style="color:#2b5b84">Episode 1 (follows π)</th></tr>
+          <tr><th>$t$</th><th>$S_t$</th><th>$R_{t+1}$</th><th>$G_t$</th></tr>
+          <tr><td>0</td><td>$s_1$</td><td>0</td><td class="fragment" data-frag="6">2.95</td></tr>
+          <tr><td>1</td><td>$s_2$</td><td>0</td><td class="fragment" data-frag="5">3.28</td></tr>
+          <tr><td>2</td><td>$s_3$</td><td>0</td><td class="fragment" data-frag="4">3.65</td></tr>
+          <tr><td>3</td><td>$s_6$</td><td>0</td><td class="fragment" data-frag="3">4.05</td></tr>
+          <tr><td>4</td><td>$s_7$</td><td>0</td><td class="fragment" data-frag="2">4.50</td></tr>
+          <tr><td>5</td><td>$s_{10}$</td><td>5</td><td class="fragment" data-frag="1">5</td></tr>
+        </table>
+        <div>
+          <table class="ep-table">
+            <tr><th colspan="4" style="color:#b5541c">Episode 2</th></tr>
+            <tr><th>$t$</th><th>$S_t$</th><th>$R_{t+1}$</th><th>$G_t$</th></tr>
+            <tr><td>0</td><td>$s_1$</td><td>0</td><td class="fragment" data-frag="8">0.90</td></tr>
+            <tr><td>1</td><td>$s_2$</td><td>1</td><td class="fragment" data-frag="7">1</td></tr>
+          </table>
+          <p class="tiny" style="margin-top:6px">In $s_2$ the agent took one of its random actions ($\uparrow$) and fell into the small exit.</p>
+        </div>
+      </div>
+      <div class="box theorem small fragment" data-frag="9" style="margin-top:6px"><span class="box-title">Estimate after 2 episodes: average the returns</span>
+        $V(s_1) = \tfrac{2.95 + 0.90}{2} = 1.93$, $\;V(s_2) = \tfrac{3.28 + 1}{2} = 2.14$; others: one return each.<br>
+        <span class="fragment" data-frag="10">States never visited <b>keep their initial value</b> $V = 0$: no data, no estimate.</span>
+      </div>
+    </div>
+    <div class="maze-stack">
+      <div class="maze vertical" data-values="none" data-paths="1 2 3 6 7 10 G | 1 2 g" data-size="300" data-labels="ids"></div>
+      <div class="maze vertical fragment" data-frag="9" data-values="fixed" data-v="1.93,2.14,3.65,0,0,4.05,4.5,0,0,5,0,0" data-paths="1 2 3 6 7 10 G | 1 2 g" data-size="300" data-labels="ids"></div>
+    </div>
+  </div>
+  <aside class="notes">Here only the last reward is non-zero, so G_t = γ^(T−t−1) × (final reward). The second maze (values) fades in over the first one.</aside>
+</section>
+
+<section class="slide">
+  <h2>Monte Carlo prediction: the algorithm</h2>
+  <div class="box discuss" style="margin-bottom:14px; font-size:26px"><span class="box-title">What if there are loops?</span>
+    A state can be visited several times in one episode:
+    <span style="white-space:nowrap">$\;\colorbox{#fbe3d2}{$s_1$} \to s_5 \to \colorbox{#fbe3d2}{$s_1$} \to s_2 \to s_3 \to \cdots \to +5$</span>.
+    Each visit of $s_1$ is followed by its own return. Which one(s) do we use?</div>
+  <div class="cols fragment" style="grid-template-columns: 1.7fr 1fr; gap: 24px">
+    <div class="box algo" style="min-width:0; margin:0"><span class="box-title">Every-visit MC</span>
+      <ol style="margin:0">
+        <li>$V(s) = 0$, $N(s) = 0$ for all $s$</li>
+        <li>For each episode $S_0, A_0, R_1, \dots, R_T$ generated by $\pi$:<br>
+          $G \leftarrow 0$; for $t = T-1, \dots, 0$:
+          <ul style="margin:2px 0 0">
+            <li>$G \leftarrow R_{t+1} + \gamma G$</li>
+            <li>$N(S_t) \mathrel{+}= 1, \quad V(S_t) \leftarrow V(S_t) + \frac{1}{N(S_t)}\big(G - V(S_t)\big)$</li>
+          </ul></li>
+      </ol>
+    </div>
+    <div class="box definition small fragment" style="margin:0"><span class="box-title">Variant: first-visit MC</span>
+      Only update at the <b>first</b> visit of $S_t$ in the episode. The returns are then independent samples of $\Vpi(s)$, which makes the analysis simpler (the textbook version). Both converge to $\Vpi$.</div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2 style="margin-bottom:14px">Why $\tfrac{1}{N}$? From the average to a step size $\alpha$</h2>
+  <p style="margin-bottom:4px">After $N$ visits of $s$ with returns $G_1, \dots, G_N$, the Monte Carlo estimate is their <b>average</b>:</p>
+  <div class="fragment" style="margin:-6px 0 -8px">$$V_N = \frac{1}{N}\sum_{i=1}^{N} G_i = \frac{1}{N}\Big((N-1)\,V_{N-1} + G_N\Big) = V_{N-1} + \frac{1}{N}\big(G_N - V_{N-1}\big)$$</div>
+  <ul class="small">
+    <li class="fragment">The update with $\tfrac1N$ gives <b>exactly the same number</b> as recomputing the average</li>
+    <li class="fragment">But it only stores $V$ and $N$, not all past returns: cheaper, and it updates one return at a time</li>
+  </ul>
+  <div class="box theorem fragment"><span class="box-title">Constant step size</span>
+    Replace $\tfrac1N$ by a constant $\textcolor{#b5541c}{\alpha} \in (0,1)$:
+    <div style="margin:-4px 0 -6px">$$V \leftarrow V + \textcolor{#b5541c}{\alpha}\,\big(G - V\big) \quad\Longrightarrow\quad V_N = (1-\textcolor{#b5541c}{\alpha})^N V_0 + \textstyle\sum_{i=1}^{N} \textcolor{#b5541c}{\alpha}(1-\textcolor{#b5541c}{\alpha})^{N-i}\, G_i$$</div>
+    <p class="small" style="margin:0">Recent returns count more; old ones are <b>forgotten</b> geometrically. Useful when the policy keeps changing (next week).</p>
+  </div>
+</section>
+
+<section class="slide practice-slide">
+  <h2>Let's practice: MC by hand, then many episodes</h2>
+  <div class="cols c-40-60">
+    <div class="learner" data-algo="mc" data-alpha="mean" data-gamma="0.9" data-eps="0.2" data-size="340"
+         data-episodes="1 2 3 6 7 10 G | 1 2 g | 1 5 1 2 3 6 7 10 G" data-visit="every" data-controls="step,episode,run,reset,truth" data-info="#log-mc" data-log-lines="2"></div>
+    <div style="font-size:19px">
+      <p style="margin-bottom:6px">First the three episodes below. <b>Step</b> plays one transition; at the end of an episode, each <b>Step</b> performs one update, going backwards.</p>
+      <ol style="margin-bottom:6px">
+        <li>Ep. 1: $s_1 \to s_2 \to s_3 \to s_6 \to s_7 \to s_{10} \to$ <b>+5</b></li>
+        <li>Ep. 2: $s_1 \to s_2 \to$ <b>+1</b> &nbsp;<span class="muted">(random action in $s_2$)</span></li>
+        <li>Ep. 3: $s_1 \to s_5 \to s_1 \to s_2 \to \cdots \to$ <b>+5</b> &nbsp;<span class="muted">(revisits $s_1$)</span></li>
+      </ol>
+      <p class="fragment" style="margin-bottom:6px">Then <b>+10</b>, <b>+100</b>: new random episodes from $\pi$. Compare with the true $\Vpi$. ($n$ = number of updates of each cell.)</p>
+      <div class="box discuss fragment" style="margin:0 0 6px; padding:10px 18px 8px"><span class="box-title">Discuss</span>
+        Which cells are learned fast, which barely at all, and why? What would go wrong if an episode never ended?</div>
+      <div id="log-mc" class="learn-log"></div>
+    </div>
+  </div>
+  <aside class="notes">Every-visit: in ep. 3, s1 is updated twice, with returns 2.95 (second visit) and 2.39 (first visit). After ep. 3: V(s1) = (2.95 + 0.90 + 2.95 + 2.39)/4 = 2.30 (the true value is 2.39). First-visit would give (2.95 + 0.90 + 2.39)/3 = 2.08. Then +10/+100: s8, s9, s11, s12 are almost never visited from s1, so MC can only learn about states it visits (the exploration problem, next week). If episodes never end, MC never gets a return to average.</aside>
+</section>
+
+<section class="slide">
+  <h2>Monte Carlo: properties</h2>
+  <div class="cols">
+    <div>
+      <h3>Good</h3>
+      <ul>
+        <li><b>Unbiased</b>: $\E[G_t \mid S_t = s] = \Vpi(s)$</li>
+        <li>Simple; no model needed</li>
+        <li>Does not rely on the Markov property</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Less good</h3>
+      <ul>
+        <li><b>High variance</b>: $G_t$ sums many random rewards and transitions</li>
+        <li>Must wait until the <b>end of the episode</b> to update</li>
+        <li>Only for episodic tasks</li>
+      </ul>
+    </div>
+  </div>
+  <div class="box discuss fragment"><span class="box-title">Can we do better?</span>
+    Bellman: $\Vpi(s) = \E_\pi[R_{t+1} + \gamma\, \Vpi(S_{t+1}) \mid S_t = s]$. Could we use that, without $P$?</div>
+</section>
+
+<section class="slide center no-footer" style="justify-content:center">
+  <h2 style="font-size:64px">Questions?</h2>
+</section>
+
+<!-- =====================================================================
+     3 · TEMPORAL DIFFERENCE
+     ===================================================================== -->
+<section class="slide section">
+  <div class="num">Part 3</div>
+  <h2>Temporal-difference learning</h2>
+  <p>Learn a guess from a guess.</p>
+</section>
+
+<section class="slide">
+  <h2>TD(0): the idea</h2>
+  <p style="margin-bottom:8px">By definition of the return: $\quad G_t = R_{t+1} + \gamma\, \cfut{G_{t+1}}$</p>
+  <p class="small fragment" style="margin-bottom:8px">MC uses $G_t$ as the target, so it must wait until the episode ends to know $\cfut{G_{t+1}}$.</p>
+  <p class="small fragment">TD: after one step we don't know $\cfut{G_{t+1}}$ yet, but $\cfut{V(S_{t+1})}$ is our current <b>estimate</b> of it, since $\Vpi(s') = \E_\pi[G_{t+1} \mid S_{t+1} = s']$:</p>
+  <div class="fragment" style="margin-top:-6px">$$V(S_t) \leftarrow V(S_t) + \alpha \big( \underbrace{R_{t+1} + \gamma\, \underbrace{\cfut{V(S_{t+1})}}_{\text{estimates } G_{t+1}}}_{\text{TD target: estimates } G_t} - V(S_t) \big)$$</div>
+  <div class="cols fragment">
+    <div class="box definition"><span class="box-title">TD error</span>
+      $\delta_t = R_{t+1} + \gamma V(S_{t+1}) - V(S_t)$ <br><span class="small">with $V(\text{exit}) = 0$</span></div>
+    <div><ul class="small" style="font-size:19px">
+      <li>Update <b>after every step</b>, online</li>
+      <li>Works for continuing tasks (no end needed)</li>
+      <li>A <b>sample</b> of the Bellman expectation equation</li>
+      <li>We say the estimator <b>bootstraps</b>: it uses its own stored values $V(S_{t+1})$</li>
+    </ul></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Backup diagrams: what each target looks at</h2>
+  <div class="cols c-3" style="gap: 26px">
+    <div style="min-width:0">
+      <h3 style="font-size:24px">DP</h3>
+      <p class="tiny" style="font-size:16px">$V(s) \leftarrow \sum_a \cpol{\pi(a|s)} \big( \crew{r(s,a)}$<br>$\qquad\qquad + \gamma \sum_{s'} \cfut{P(s'|s,a)\, V(s')} \big)$</p>
+      <svg viewBox="0 0 280 366" width="280" height="366" aria-label="DP backup: all actions and next states, one step">
+        <g stroke-width="2.5" fill="none">
+          <line x1="140" y1="48" x2="70" y2="120" stroke="#2f5a24"/><line x1="140" y1="48" x2="210" y2="120" stroke="#2f5a24"/>
+          <line x1="70" y1="128" x2="35" y2="214" stroke="#2b5b84"/><line x1="70" y1="128" x2="105" y2="214" stroke="#2b5b84"/>
+          <line x1="210" y1="128" x2="175" y2="214" stroke="#2b5b84"/><line x1="210" y1="128" x2="245" y2="214" stroke="#2b5b84"/>
+        </g>
+        <circle cx="140" cy="34" r="14" fill="#fff" stroke="#1b1d1a" stroke-width="2"/>
+        <circle cx="70" cy="124" r="7" fill="#1b1d1a"/><circle cx="210" cy="124" r="7" fill="#1b1d1a"/>
+        <g fill="#e3ecf4" stroke="#2b5b84" stroke-width="3"><circle cx="35" cy="228" r="14"/><circle cx="105" cy="228" r="14"/><circle cx="175" cy="228" r="14"/><circle cx="245" cy="228" r="14"/></g>
+        <text x="162" y="40" font-size="17" font-weight="700">s</text>
+        <text x="190" y="78" font-size="16" fill="#2f5a24" font-weight="700">π(a|s)</text>
+        <text x="140" y="196" text-anchor="middle" font-size="15" fill="#2b5b84" font-weight="700">P(s′|s,a)</text>
+        <text x="140" y="270" text-anchor="middle" font-size="16" fill="#2b5b84" font-weight="700">bootstrap: V(s′)</text>
+      </svg>
+      <p class="tiny" style="font-size:16px">Needs the model. One step, <b>all</b> branches.</p>
+    </div>
+    <div class="fragment" style="min-width:0">
+      <h3 style="font-size:24px">MC</h3>
+      <p class="tiny" style="font-size:16px">$V(S_t) \leftarrow V(S_t) + \alpha\big(\crew{G_t} - V(S_t)\big)$, $\;\crew{G_t = R_{t+1} + \gamma R_{t+2} + \cdots}$</p>
+      <svg viewBox="0 0 280 366" width="280" height="366" aria-label="MC backup: one sampled trajectory until the end"><circle cx="90" cy="34" r="14" fill="#fff" stroke="#1b1d1a" stroke-width="2"/>
+<text x="118" y="40" font-size="17" fill="#1b1d1a" font-weight="700">S<tspan baseline-shift="sub" font-size="12">t</tspan></text>
+<line x1="90" y1="48" x2="90" y2="66" stroke="#1b1d1a" stroke-width="2"/>
+<circle cx="90" cy="80" r="7" fill="#1b1d1a"/>
+<text x="118" y="86" font-size="17" fill="#2f5a24" font-weight="700">A<tspan baseline-shift="sub" font-size="12">t</tspan></text>
+<line x1="90" y1="94" x2="90" y2="112" stroke="#1b1d1a" stroke-width="2"/>
+<circle cx="90" cy="126" r="14" fill="#fff" stroke="#1b1d1a" stroke-width="2"/>
+<text x="118" y="132" font-size="17" fill="#b5541c" font-weight="700">R<tspan baseline-shift="sub" font-size="12">t+1</tspan>, S<tspan baseline-shift="sub" font-size="12">t+1</tspan></text>
+<line x1="90" y1="140" x2="90" y2="158" stroke="#1b1d1a" stroke-width="2"/>
+<circle cx="90" cy="172" r="7" fill="#1b1d1a"/>
+<text x="118" y="178" font-size="17" fill="#2f5a24" font-weight="700">A<tspan baseline-shift="sub" font-size="12">t+1</tspan></text>
+<line x1="90" y1="186" x2="90" y2="204" stroke="#1b1d1a" stroke-width="2"/>
+<circle cx="90" cy="218" r="14" fill="#fff" stroke="#1b1d1a" stroke-width="2"/>
+<text x="118" y="224" font-size="17" fill="#b5541c" font-weight="700">R<tspan baseline-shift="sub" font-size="12">t+2</tspan>, S<tspan baseline-shift="sub" font-size="12">t+2</tspan></text>
+<line x1="90" y1="232" x2="90" y2="250" stroke="#1b1d1a" stroke-width="2"/>
+<text x="90" y="270" text-anchor="middle" font-size="22" fill="#1b1d1a">⋮</text>
+<text x="118" y="270" font-size="17" fill="" font-weight="700"></text>
+<line x1="90" y1="278" x2="90" y2="296" stroke="#1b1d1a" stroke-width="2"/>
+<rect x="76" y="296" width="28" height="28" fill="#f3d97a" stroke="#5b4300"/>
+<text x="118" y="316" font-size="17" fill="#b5541c" font-weight="700">R<tspan baseline-shift="sub" font-size="12">T</tspan>, end</text><path d="M58 22 Q44 22 44 40 L44 292 Q44 310 58 310" fill="none" stroke="#b5541c" stroke-width="3"/><text x="36" y="172" text-anchor="end" font-size="17" fill="#b5541c" font-weight="700">G<tspan baseline-shift="sub" font-size="12">t</tspan></text></svg>
+      <p class="tiny" style="font-size:16px">One <b>sampled</b> trajectory, all the way to the end.</p>
+    </div>
+    <div class="fragment" style="min-width:0">
+      <h3 style="font-size:24px">TD(0)</h3>
+      <p class="tiny" style="font-size:16px">$V(S_t) \leftarrow V(S_t) + \alpha\big(\crew{R_{t+1}} + \gamma\, \cfut{V(S_{t+1})} - V(S_t)\big)$</p>
+      <svg viewBox="0 0 280 366" width="280" height="366" aria-label="TD backup: one sampled step, then bootstrap"><circle cx="90" cy="34" r="14" fill="#fff" stroke="#1b1d1a" stroke-width="2"/>
+<text x="118" y="40" font-size="17" fill="#1b1d1a" font-weight="700">S<tspan baseline-shift="sub" font-size="12">t</tspan></text>
+<line x1="90" y1="48" x2="90" y2="66" stroke="#1b1d1a" stroke-width="2"/>
+<circle cx="90" cy="80" r="7" fill="#1b1d1a"/>
+<text x="118" y="86" font-size="17" fill="#2f5a24" font-weight="700">A<tspan baseline-shift="sub" font-size="12">t</tspan></text>
+<line x1="90" y1="94" x2="90" y2="112" stroke="#1b1d1a" stroke-width="2"/>
+<circle cx="90" cy="126" r="14" fill="#e3ecf4" stroke="#2b5b84" stroke-width="3"/>
+<text x="118" y="132" font-size="17" fill="#b5541c" font-weight="700">R<tspan baseline-shift="sub" font-size="12">t+1</tspan>, S<tspan baseline-shift="sub" font-size="12">t+1</tspan></text><text x="118" y="168" font-size="17" fill="#2b5b84" font-weight="700">bootstrap: V(S<tspan baseline-shift="sub" font-size="12">t+1</tspan>)</text><line x1="90" y1="140" x2="90" y2="290" stroke="#b8bcb0" stroke-width="2" stroke-dasharray="4 5"/><text x="104" y="250" font-size="15" fill="#8a9086">rest of the episode:</text><text x="104" y="270" font-size="15" fill="#8a9086">not needed</text></svg>
+      <p class="tiny" style="font-size:16px">One <b>sampled</b> step, then bootstrap.</p>
+    </div>
+  </div>
+  <aside class="notes">Same colours as Lecture 2: green = actions chosen by π, orange = rewards actually received, blue = value estimates we bootstrap from. MC samples like TD but goes to the end; DP bootstraps like TD but averages over all branches with the model.</aside>
+</section>
+
+<section class="slide practice-slide">
+  <h2>Let's practice: TD(0) by hand, same episodes</h2>
+  <div class="cols c-40-60">
+    <div class="learner" data-algo="td" data-alpha="0.5" data-gamma="0.9" data-eps="0.2" data-size="360"
+         data-episodes="1 2 3 6 7 10 G | 1 2 g | 1 5 1 2 3 6 7 10 G" data-controls="step,episode,reset,truth" data-info="#log-td"></div>
+    <div>
+      <p class="small">$\alpha = 0.5$, $V_0 = 0$. Each <b>Step</b> = one transition <b>and</b> its update.</p>
+      <ul class="small">
+        <li class="fragment">After episode 1, which states have changed? <span class="fragment muted">Only $s_{10}$: $V(s_{10}) = 2.5$</span></li>
+        <li class="fragment">After episode 3: $V(s_7) = 1.125$, $V(s_{10}) = 3.75$. Information travels <b>one step back per visit</b>.</li>
+      </ul>
+      <div id="log-td" class="learn-log"></div>
+    </div>
+  </div>
+  <aside class="notes">Contrast with MC after the same 3 episodes: MC already has values for all visited states, TD has mostly zeros. That's the bias of bootstrapping from V0 = 0. Episode 2 detail: V(s1) stays 0 since V(s2) was 0 at that time; V(s2) becomes 0.5.</aside>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Maze</span>MC and TD on the same episodes</h2>
+  <div class="cols c-60-40">
+    <div class="learner" data-algo="mc,td" data-alpha-mc="0.2" data-alpha-td="0.2" data-gamma="0.9" data-eps="0.2" data-size="300" data-seed="5" data-controls="episode,run,reset,truth"></div>
+    <div>
+      <div class="box discuss"><span class="box-title">Discuss</span>
+        After 10 episodes, why is TD's $V(s_1)$ still close to $0$? What do you expect after 100?</div>
+      <p class="small fragment">The $+5$ moves back <b>one state per visit</b>, scaled by $\alpha$. MC moves it all the way back in one episode.</p>
+      <p class="small fragment">Here the conditions are ideal for MC: short episodes, a single reward at the end, deterministic moves. <b>See the appendix for the bigger maze.</b></p>
+    </div>
+  </div>
+  <aside class="notes">Run +10 a few times, then +100. Early on MC is closer to V^π; TD needs many episodes for the +5 to propagate back to s1. Ask why.</aside>
+</section>
+
+<!-- =====================================================================
+     4 · BIAS / VARIANCE, TD(λ)
+     ===================================================================== -->
+<section class="slide section">
+  <div class="num">Part 4</div>
+  <h2>Bias, variance, and TD($\lambda$)</h2>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Maze</span>Bias and variance of the estimate of $V(s_2)$</h2>
+  <p style="margin-bottom:4px; font-size:19px">Exactly the setting of the previous slide: same maze and policy, $\gamma = 0.9$, start in $s_1$, $V_0 = 0$, both methods with $\alpha = 0.2$. We repeat the 100-episode run <b>1000 times</b> and record $V(s_2)$ after every episode.</p>
+  <div class="learn-chart" data-mode="bv" data-state="2" data-series="mc:0.2; td:0.2" data-episodes="100" data-runs="1000" data-width="1120" data-height="250"></div>
+  <div class="cols" style="gap:24px; margin-top:6px">
+    <div class="box practice fragment" style="margin:0; font-size:18px; padding:10px 18px 8px"><span class="box-title">Bias</span>
+      TD starts far too low and needs about 50 episodes to catch up: it bootstraps from $V(s_3), V(s_6), \dots$, which are still $0$. MC only has to forget $V_0$ (about 10 episodes).</div>
+    <div class="box definition fragment" style="margin:0; font-size:18px; padding:10px 18px 8px"><span class="box-title">Variance</span>
+      Once settled, MC's estimates spread more (sd ≈ 0.29 vs ≈ 0.20): the MC target adds up <b>all</b> the random steps until the exit, the TD target only <b>one</b>.</div>
+  </div>
+  <aside class="notes">Same step size on purpose: with the running mean (1/N), MC's variance keeps shrinking like 1/√N (0.08 after 100 episodes), which is about the step size, not about bootstrapping. Constant-α MC is an exponential moving average: it effectively averages only the last ~9 returns, and the returns from s2 have sd ≈ 0.78, hence ≈ 0.26–0.29.</aside>
+</section>
+
+<section class="slide">
+  <h2>Bias–variance trade-off</h2>
+  <table>
+    <tr><th></th><th>Target</th><th>Bias</th><th>Variance</th></tr>
+    <tr><td><b>MC</b></td><td>$G_t = R_{t+1} + \gamma R_{t+2} + \dots$</td><td><b>none</b>: $\E[G_t | S_t = s] = \Vpi(s)$</td><td><b>high</b>: many random steps</td></tr>
+    <tr class="fragment"><td><b>TD</b></td><td>$R_{t+1} + \gamma V(S_{t+1})$</td><td><b>biased</b> while $V \neq \Vpi$</td><td><b>low</b>: one random step</td></tr>
+  </table>
+  <ul class="small" style="margin-top:20px">
+    <li class="fragment">The "ideal" TD target $R_{t+1} + \gamma \Vpi(S_{t+1})$ is unbiased, but we don't have $\Vpi$</li>
+    <li class="fragment">Bias of the TD target: $\;\gamma\,\E\big[V(S_{t+1}) - \Vpi(S_{t+1})\big]$, which shrinks as $V$ improves</li>
+    <li class="fragment">Both converge to $\Vpi$ (tabular, suitable step sizes $\sum \alpha_t = \infty$, $\sum \alpha_t^2 < \infty$)</li>
+  </ul>
+  <div class="box discuss fragment" style="margin-top:10px"><span class="box-title">Next</span>
+    Is there a <b>middle ground</b> that trades off bias and variance?</div>
+  <p class="tiny" style="margin-top:6px">A detailed bias–variance study in the bigger maze is in the appendix.</p>
+</section>
+
+<section class="slide">
+  <h2>In between: $n$-step returns</h2>
+  <p>Look $n$ steps ahead, then bootstrap:</p>
+  <div class="eq-big">$$G_t^{(n)} = R_{t+1} + \gamma R_{t+2} + \dots + \gamma^{n-1} R_{t+n} + \gamma^n V(S_{t+n})$$</div>
+  <table>
+    <tr><th>$n$</th><td>$1$</td><td>$2$</td><td>$\cdots$</td><td>$\infty$</td></tr>
+    <tr><th>target</th><td>$R_{t+1} + \gamma V(S_{t+1})$ &nbsp;(TD(0))</td><td>$R_{t+1} + \gamma R_{t+2} + \gamma^2 V(S_{t+2})$</td><td></td><td>$G_t$ &nbsp;(MC)</td></tr>
+  </table>
+  <p class="fragment" style="margin-top:18px">$n$-step TD: $\;V(S_t) \leftarrow V(S_t) + \alpha\big(G_t^{(n)} - V(S_t)\big)$. Small $n$: more bias. Large $n$: more variance.</p>
+  <div class="box discuss fragment"><span class="box-title">Discuss</span>Which $n$ should we choose? Do we have to choose just one?</div>
+</section>
+
+<section class="slide">
+  <h2>TD($\lambda$): average over all $n$</h2>
+  <div class="cols c-60-40 middle">
+    <div>
+      <div class="box definition"><span class="box-title">$\lambda$-return</span>
+        $$G_t^\lambda = (1-\lambda) \sum_{n=1}^{\infty} \lambda^{n-1} G_t^{(n)}, \qquad \lambda \in [0,1]$$
+      </div>
+      <ul class="small">
+        <li>Geometric weights, summing to 1</li>
+        <li>$\lambda = 0$: TD(0). $\;\lambda = 1$: MC.</li>
+        <li>"Forward view": still needs the future, like MC</li>
+      </ul>
+    </div>
+    <figure>
+      <svg viewBox="0 0 340 230" width="340" height="230" aria-label="weights (1-λ)λ^(n-1) for λ=0.7">
+        <line x1="30" y1="190" x2="330" y2="190" stroke="#1b1d1a"/>
+        <g fill="#6f9a3c">
+          <rect x="40" y="100" width="26" height="90"/><rect x="75" y="127" width="26" height="63"/><rect x="110" y="146" width="26" height="44"/>
+          <rect x="145" y="159" width="26" height="31"/><rect x="180" y="168" width="26" height="22"/><rect x="215" y="175" width="26" height="15"/>
+          <rect x="250" y="179" width="26" height="11"/><rect x="285" y="182" width="26" height="8"/>
+        </g>
+        <g font-size="14" fill="#8a9086" text-anchor="middle"><text x="53" y="208">1</text><text x="88" y="208">2</text><text x="123" y="208">3</text><text x="158" y="208">4</text><text x="193" y="208">5</text><text x="228" y="208">6</text><text x="263" y="208">7</text><text x="298" y="208">…</text></g>
+        <text x="180" y="226" font-size="15" text-anchor="middle" fill="#4a4f47">n</text>
+        <text x="40" y="90" font-size="15" fill="#2f5a24">weight (1−λ)λⁿ⁻¹, λ = 0.7</text>
+      </svg>
+    </figure>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>TD($\lambda$), backward view: eligibility traces</h2>
+  <div class="cols c-60-40" style="gap:30px">
+    <div class="box algo" style="font-size:20px; margin:0"><span class="box-title">TD($\lambda$) (accumulating traces)</span>
+      <ol>
+        <li>Each episode: $e(s) = 0$ for all $s$</li>
+        <li>At each step $t$:
+          <ul>
+            <li>$\delta_t = R_{t+1} + \gamma V(S_{t+1}) - V(S_t)$</li>
+            <li>$e(s) \leftarrow \gamma \lambda\, e(s)$ for all $s$; $\quad e(S_t) \leftarrow e(S_t) + 1$</li>
+            <li>$V(s) \leftarrow V(s) + \alpha\, \delta_t\, e(s)$ for <b>all</b> $s$</li>
+          </ul></li>
+      </ol>
+    </div>
+    <div>
+      <ul class="small" style="font-size:18px">
+        <li>$e(s)$ is a <b>discounted counter of visits</b>: $+1$ at each visit of $s$, then shrinks by $\gamma\lambda$ at every step: $\;e_t(s) = \sum_{k \le t} (\gamma\lambda)^{t-k}\, \mathbb{1}[S_k = s]$</li>
+        <li class="fragment">Online, one step at a time, like TD(0)</li>
+        <li class="fragment">Sends each TD error back to <b>all</b> recently visited states at once</li>
+        <li class="fragment">Offline, it matches the forward view (Sutton &amp; Barto §12.4)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="fragment" style="margin-top:4px">
+    <p class="small" style="margin:0 0 2px; font-size:18px">Example: episode $s_1 \to s_5 \to s_1 \to s_2 \to s_3$, with $\gamma\lambda = 0.5$. At $t = 4$, the TD error $\delta_4$ updates every visited state, weighted by its trace (box on the right).</p>
+    <svg viewBox="0 0 1140 196" width="1140" height="196" aria-label="eligibility traces along the episode, gamma*lambda = 0.5">
+<line x1="180.0" y1="128" x2="900.0" y2="128" stroke="#1b1d1a"/>
+<line x1="180.0" y1="84.0" x2="900.0" y2="84.0" stroke="#e4e4dc" stroke-dasharray="4 4"/><text x="172.0" y="89.0" text-anchor="end" font-size="13" fill="#8a9086">0.5</text>
+<line x1="180.0" y1="40.0" x2="900.0" y2="40.0" stroke="#e4e4dc" stroke-dasharray="4 4"/><text x="172.0" y="45.0" text-anchor="end" font-size="13" fill="#8a9086">1</text>
+<text x="172.0" y="133" text-anchor="end" font-size="13" fill="#8a9086">0</text>
+<text x="0.0" y="66.4" font-size="16" fill="#4a4f47" font-weight="700">trace e(s)</text><text x="0.0" y="154" font-size="16" fill="#4a4f47" font-weight="700">time t</text><text x="0.0" y="186" font-size="16" fill="#4a4f47" font-weight="700">visited state</text>
+<text x="210.0" y="154" text-anchor="middle" font-size="16" fill="#4a4f47">0</text>
+<rect x="186.0" y="164" width="48" height="28" rx="6" fill="#2f5a24" opacity="0.15"/><text x="210.0" y="184" text-anchor="middle" font-size="17" font-weight="700" fill="#2f5a24">s<tspan baseline-shift="sub" font-size="12">1</tspan></text>
+<text x="375.0" y="154" text-anchor="middle" font-size="16" fill="#4a4f47">1</text>
+<rect x="352.4" y="164" width="48" height="28" rx="6" fill="#2b5b84" opacity="0.15"/><text x="375.0" y="184" text-anchor="middle" font-size="17" font-weight="700" fill="#2b5b84">s<tspan baseline-shift="sub" font-size="12">5</tspan></text>
+<text x="540.0" y="154" text-anchor="middle" font-size="16" fill="#4a4f47">2</text>
+<rect x="517.4" y="164" width="48" height="28" rx="6" fill="#2f5a24" opacity="0.15"/><text x="540.0" y="184" text-anchor="middle" font-size="17" font-weight="700" fill="#2f5a24">s<tspan baseline-shift="sub" font-size="12">1</tspan></text>
+<text x="705.0" y="154" text-anchor="middle" font-size="16" fill="#4a4f47">3</text>
+<rect x="682.4" y="164" width="48" height="28" rx="6" fill="#b5541c" opacity="0.15"/><text x="705.0" y="184" text-anchor="middle" font-size="17" font-weight="700" fill="#b5541c">s<tspan baseline-shift="sub" font-size="12">2</tspan></text>
+<text x="870.0" y="154" text-anchor="middle" font-size="16" fill="#4a4f47">4</text>
+<rect x="847.4" y="164" width="48" height="28" rx="6" fill="#7a3e8e" opacity="0.15"/><text x="870.0" y="184" text-anchor="middle" font-size="17" font-weight="700" fill="#7a3e8e">s<tspan baseline-shift="sub" font-size="12">3</tspan></text>
+<polyline points="210.0,128 210.0,40 375.0,84.0 375.0,84.0 540.0,106.0 540.0,18.0 705.0,73.0 705.0,73.0 870.0,100.5 870.0,100.5" fill="none" stroke="#2f5a24" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="210.0" cy="40" r="5" fill="#2f5a24"/>
+<text x="218.5" y="33" font-size="13" fill="#2f5a24" font-weight="700">1</text>
+<circle cx="375.0" cy="84.0" r="5" fill="#2f5a24"/>
+<text x="383.5" y="77.0" font-size="13" fill="#2f5a24" font-weight="700">0.5</text>
+<circle cx="540.0" cy="18.0" r="5" fill="#2f5a24"/>
+<circle cx="705.0" cy="73.0" r="5" fill="#2f5a24"/>
+<text x="713.5" y="66.0" font-size="13" fill="#2f5a24" font-weight="700">0.625</text>
+<circle cx="870.0" cy="100.5" r="5" fill="#2f5a24"/>
+<polyline points="375.0,128 375.0,40 540.0,84.0 540.0,84.0 705.0,106.0 705.0,106.0 870.0,117.0 870.0,117.0" fill="none" stroke="#2b5b84" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="375.0" cy="40" r="5" fill="#2b5b84"/>
+<text x="383.5" y="56" font-size="13" fill="#2b5b84" font-weight="700">1</text>
+<circle cx="540.0" cy="84.0" r="5" fill="#2b5b84"/>
+<text x="548.5" y="100.0" font-size="13" fill="#2b5b84" font-weight="700">0.5</text>
+<circle cx="705.0" cy="106.0" r="5" fill="#2b5b84"/>
+<text x="713.5" y="122.0" font-size="13" fill="#2b5b84" font-weight="700">0.25</text>
+<circle cx="870.0" cy="117.0" r="5" fill="#2b5b84"/>
+<polyline points="705.0,128 705.0,40 870.0,84.0 870.0,84.0" fill="none" stroke="#b5541c" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="705.0" cy="40" r="5" fill="#b5541c"/>
+<text x="713.5" y="56" font-size="13" fill="#b5541c" font-weight="700">1</text>
+<circle cx="870.0" cy="84.0" r="5" fill="#b5541c"/>
+<polyline points="870.0,128 870.0,40" fill="none" stroke="#7a3e8e" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="870.0" cy="40" r="5" fill="#7a3e8e"/>
+<text x="548.5" y="14.0" font-size="13" fill="#2f5a24" font-weight="700">1.25</text><text x="530.6" y="22.0" text-anchor="end" font-size="13" fill="#2f5a24">revisit: 0.25 + 1</text>
+<rect x="916.0" y="6" width="196" height="126" rx="8" fill="#f6f5f0" stroke="#dcdcd3"/><text x="930.0" y="28" font-size="14" fill="#4a4f47" font-weight="700">weights on δ₄ at t = 4</text>
+<text x="930.0" y="52" font-size="15" fill="#7a3e8e" font-weight="700">e(s<tspan baseline-shift="sub" font-size="11">3</tspan>) = 1</text>
+<text x="930.0" y="74" font-size="15" fill="#b5541c" font-weight="700">e(s<tspan baseline-shift="sub" font-size="11">2</tspan>) = 0.5</text>
+<text x="930.0" y="96" font-size="15" fill="#2f5a24" font-weight="700">e(s<tspan baseline-shift="sub" font-size="11">1</tspan>) = 0.3125</text>
+<text x="930.0" y="118" font-size="15" fill="#2b5b84" font-weight="700">e(s<tspan baseline-shift="sub" font-size="11">5</tspan>) = 0.125</text>
+</svg>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Maze</span>TD($\lambda$) on the same episodes</h2>
+  <div class="cols c-60-40">
+    <div class="learner" data-algo="td,tdl" data-alpha-td="0.2" data-lambda="0.7" data-gamma="0.9" data-eps="0.2" data-size="300" data-seed="5" data-controls="episode,run,reset,truth"></div>
+    <div>
+      <div class="box discuss"><span class="box-title">Discuss</span>
+        Play one episode. Which states did TD(0) update? Which did TD($\lambda$) update?</div>
+      <p class="small fragment">TD($\lambda$) sends the final TD error back along the whole path, with weight $(\gamma\lambda)^k$.</p>
+    </div>
+  </div>
+  <aside class="notes">After the first episode, TD(λ) has already updated the whole path (with decaying weight), unlike TD(0).</aside>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Maze</span>Choosing $\lambda$</h2>
+  <div class="cols c-60-40">
+    <div class="learn-chart" data-mode="lambda" data-series="0.2; 0.4; 0.6; 0.8" data-episodes="30" data-runs="60" data-width="680" data-height="380"></div>
+    <div>
+      <p class="small">Average error over the first 30 episodes, for four step sizes $\alpha$.</p>
+      <ul class="small">
+        <li class="fragment">Small $\alpha$: $\lambda$ close to 1 is best. The bias from $V_0 = 0$ dominates, so it pays to look far ahead.</li>
+        <li class="fragment">Larger $\alpha$: the best $\lambda$ is <b>in between</b> (about 0.6–0.8). Variance matters too.</li>
+        <li class="fragment">Same picture as Sutton &amp; Barto, Fig. 12.3</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Is TD($\lambda$) still used?</h2>
+  <ul>
+    <li>Eligibility traces as such: less common in deep RL. They don't combine easily with experience replay.</li>
+    <li class="fragment">But the <b>idea</b> is everywhere:
+      <ul>
+        <li>$n$-step returns: A3C, Rainbow DQN</li>
+        <li>$\lambda$-returns of advantages, i.e. <b>GAE</b> in PPO (policy gradients, December)</li>
+        <li>Off-policy multi-step corrections: Retrace, V-trace</li>
+      </ul></li>
+    <li class="fragment">Takeaway: <b>how far to look before bootstrapping</b> is a central design choice</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>From $V$ to $Q$: $n$-step TD for action values</h2>
+  <p class="small" style="margin-bottom:8px">Same ideas, with <b>state–action pairs</b> instead of states: <span style="white-space:nowrap">estimate $\Qpi(s,a) = \E_\pi[G_t \mid S_t = s, A_t = a]$</span>, a table of $|\S| \times |\A|$ numbers (48 in the maze).</p>
+  <div class="fragment">
+    <p class="small" style="margin:0">Along the episode $\;S_t, A_t, \crew{R_{t+1}}, S_{t+1}, A_{t+1}, \crew{R_{t+2}}, \dots, S_{t+n}, A_{t+n}$, with all actions drawn from $\pi$:</p>
+    <div style="margin:-4px 0 -6px">$$\begin{aligned} G_{t:t+n} &= \crew{R_{t+1} + \gamma R_{t+2} + \dots + \gamma^{n-1} R_{t+n}} + \gamma^n \cfut{Q(S_{t+n}, A_{t+n})} \\ Q(S_t, A_t) &\leftarrow Q(S_t, A_t) + \alpha \big( G_{t:t+n} - Q(S_t, A_t) \big) \end{aligned}$$</div>
+  </div>
+  <div class="cols fragment" style="gap:28px">
+    <div class="box definition small" style="margin:0"><span class="box-title">$n = 1$: TD(0) for $Q$</span>
+      $Q(S_t,A_t) \leftarrow Q(S_t,A_t) + \alpha\big(\crew{R_{t+1}} + \gamma\, \cfut{Q(S_{t+1}, A_{t+1})} - Q(S_t,A_t)\big)$<br>
+      Uses the quintuple $(S_t, A_t, R_{t+1}, S_{t+1}, A_{t+1})$.</div>
+    <div class="box definition small" style="margin:0"><span class="box-title">$n = \infty$: Monte Carlo for $Q$</span>
+      Average the returns $G_t$ observed after each visit of the pair $(s,a)$. Same $\lambda$-trick as for $V$ in between.</div>
+  </div>
+  <div class="box theorem small fragment" style="margin-top:12px"><span class="box-title">Why bother with $Q$?</span>
+    Without a model, $V$ alone cannot tell us which action is best: $\argmax_a \big(r(s,a) + \gamma \sum_{s'} P(s'|s,a) V(s')\big)$ needs $P$ and $r$. With $Q$, the greedy action is simply $\argmax_a Q(s,a)$.</div>
+  <aside class="notes">This is exactly the update Chris will call SARSA, once the policy keeps being improved towards the greedy one. Here π is still fixed: it is pure prediction.</aside>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Conclusions</span>Two ways to estimate a value function from data</h2>
+  <div class="cols" style="gap:28px">
+    <div class="box definition" style="margin:0; font-size:19px; padding:12px 20px 10px"><span class="box-title">Monte Carlo</span>
+      Target: the full return $\crew{G_t}$
+      <ul style="margin:4px 0 0">
+        <li><b>Unbiased</b>, but <b>high variance</b></li>
+        <li>Waits for the <b>end of the episode</b></li>
+        <li>Needs no Markov property</li>
+      </ul></div>
+    <div class="box definition" style="margin:0; font-size:19px; padding:12px 20px 10px"><span class="box-title">Temporal difference</span>
+      Target: $\crew{R_{t+1}} + \gamma\, \cfut{V(S_{t+1})}$ (bootstrapping)
+      <ul style="margin:4px 0 0">
+        <li><b>Biased</b> while $V$ is wrong, but <b>low variance</b></li>
+        <li>Learns <b>after every step</b></li>
+        <li>Uses the Markov structure</li>
+      </ul></div>
+  </div>
+  <p style="margin:8px 0 0; font-size:19px">In between: $n$-step returns and TD($\lambda$) choose how far to look before bootstrapping. The same ideas estimate $Q$ as well as $V$.</p>
+  <div class="box theorem fragment" style="margin-top:10px; font-size:19px"><span class="box-title">Why TD remains the workhorse of RL</span>
+    <p style="margin:0 0 2px">The TD error is the gap between the current estimate and the (sampled) Bellman target:</p>
+    <div style="margin:-6px 0 -6px">$$\delta_t = \underbrace{\crew{R_{t+1}} + \gamma\, \cfut{V(S_{t+1})}}_{\text{Bellman target}} - \underbrace{V(S_t)}_{\text{estimate}}$$</div>
+    <p style="margin:0">It works like a <b>loss</b>: $V(S_t) \leftarrow V(S_t) + \alpha\, \delta_t$ is a gradient step on $\tfrac12 \delta_t^2$ (target held fixed). Learning a value function becomes "make the Bellman error small", for any model of $V$ or $Q$.</p>
+  </div>
+  <aside class="notes">Keep the deep-RL link for Chris's Control II lecture (fitted Q-iteration, DQN): there the table is replaced by a neural network, and the squared TD error becomes the training loss.</aside>
+</section>
+
+<section class="slide">
+  <h2>Next time: Model-free control (Chris)</h2>
+  <ul>
+    <li>We can now estimate $\Qpi$ from data, for a <b>fixed</b> $\pi$</li>
+    <li>Improve the policy as we go, while still exploring</li>
+    <li>TD for $Q$ + improvement = <b>SARSA</b>, <b>Q-learning</b></li>
+  </ul>
+  <div class="box discuss"><span class="box-title">Think</span>What changes if we bootstrap from $\max_a Q(S_{t+1}, a)$ instead of $Q(S_{t+1}, A_{t+1})$?</div>
+</section>
+
+<!-- =====================================================================
+     APPENDIX: BIAS–VARIANCE STUDY
+     ===================================================================== -->
+<section class="slide section">
+  <div class="num">Appendix</div>
+  <h2>Bias–variance study</h2>
+  <p>MC and TD compared in the bigger maze: spread of the targets, online learning, and what each method makes of the same data.</p>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Appendix</span>A bigger maze, with rewards along the way</h2>
+  <div class="cols" style="grid-template-columns: auto 1fr; gap: 40px">
+    <figure><div class="maze vertical" data-maze="coins" data-values="exact" data-arrows="policy" data-size="400"></div>
+      <figcaption>The given policy $\pi$ and its true value $\Vpi$ (hover a cell for the number)</figcaption></figure>
+    <div>
+      <p class="small">The two-exit maze is small, with a single reward at the end. What about bigger problems with rewards <b>along the way</b>? A 10×10 maze:</p>
+      <ul class="small">
+        <li><b>Coins</b> $+1$ and <b>traps</b> $-1$, each time you step on them</li>
+        <li>Exits: $+5$ (far, behind a trap), $+1$ (near the start)</li>
+        <li><b>Slippery</b>: 20% chance to slip</li>
+        <li>Given policy: the <b>shortest route to the big exit</b>, with 20% random actions</li>
+        <li>$\gamma = 0.95$; episodes last about 30 steps</li>
+      </ul>
+      <p class="small fragment">Every return $G_t$ now adds up <b>many random rewards</b>: coins and traps hit or missed, slips.</p>
+    </div>
+  </div>
+  <aside class="notes">76 states. The policy is given, not optimal: with coins that pay every time, an optimal agent would just walk back and forth between two coins. For prediction we don't care: we evaluate the policy we are given.</aside>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Bigger maze</span>Monte Carlo in the bigger maze</h2>
+  <div class="cols" style="grid-template-columns: auto 1fr; gap: 40px">
+    <div class="learner" data-maze="coins" data-algo="mc" data-alpha="mean" data-size="400" data-seed="5" data-controls="episode,run,reset,truth"></div>
+    <div>
+      <ul class="small">
+        <li>Press <b>Episode</b> a few times, then <b>+10</b>, <b>+100</b></li>
+        <li class="fragment">Each episode updates every cell along its path, with a <b>very noisy</b> return</li>
+        <li class="fragment">Cells off the route are rarely visited, so they stay wrong for a long time</li>
+      </ul>
+      <div class="box discuss fragment"><span class="box-title">Discuss</span>
+        Two episodes pass through the same cell and then continue the same way. Does MC "notice" that they share the rest of the path?</div>
+    </div>
+  </div>
+  <aside class="notes">Answer: no. MC treats every return separately, even when trajectories merge. TD exploits exactly this (appendix: batch TD).</aside>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Bigger maze</span>What do the targets for $V(\text{start})$ look like?</h2>
+  <p class="small">300 episodes from the start cell. Each row is a <b>histogram</b>: bar height = how many of the 300 targets fall in that range. Black line = their mean.</p>
+  <div class="target-spread" data-maze="coins" data-samples="300" data-rows="mc,td,td0" data-bin="0.1" data-row-height="60"></div>
+  <ul class="small" style="margin-top:14px">
+    <li class="fragment">MC: centred on the true value, but <b>spread out</b>: every coin, trap and slip along the way adds noise</li>
+    <li class="fragment">TD with a good $V$: same centre, about <b>half the spread</b>: only one random step</li>
+    <li class="fragment">TD at the start ($V = 0$): almost no spread, but wrong. <b>That's the bias.</b></li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Bigger maze</span>MC and TD online, on the same episodes</h2>
+  <div class="cols" style="grid-template-columns: auto 1fr; gap: 32px">
+    <div class="learner" data-maze="coins" data-algo="mc,td" data-alpha-mc="0.05" data-alpha-td="0.1" data-size="300" data-seed="5" data-controls="episode,run,reset,truth"></div>
+    <div>
+      <div class="box discuss"><span class="box-title">Discuss</span>
+        Run +100 a few times. Where is TD better already? Where is it still behind?</div>
+      <p class="small fragment">Near the exits TD is quickly accurate. Far from them, the $+5$ still has to travel back one cell per visit.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Bigger maze</span>Learning curves, online</h2>
+  <div class="cols c-60-40">
+    <div class="learn-chart" data-maze="coins" data-series="mc:0.05; td:0.1; td:0.2" data-episodes="300" data-runs="20" data-width="680" data-height="380"></div>
+    <div>
+      <p class="small">Average over 20 runs; error weighted by how often $\pi$ visits each state.</p>
+      <ul class="small">
+        <li class="fragment">Online, from $V_0 = 0$, MC is still ahead early on: TD pays for its <b>bias</b> while values propagate back</li>
+        <li class="fragment">A larger $\alpha$ speeds TD up but leaves more noise at the end</li>
+        <li class="fragment">So is TD just worse? Look at what happens when both get the <b>same data</b> and can use it fully.</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="notes">Be honest: online and tabular, starting from zero, MC often wins in episodic tasks with moderate noise. The next two slides show where TD's advantage comes from.</aside>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Bigger maze</span>Same data, better answer: batch TD</h2>
+  <div class="cols c-60-40">
+    <div class="learn-chart" data-maze="coins" data-mode="batch" data-ks="5,10,20,50,100" data-runs="30" data-width="680" data-height="360"></div>
+    <div>
+      <p class="small"><b>Batch</b> setting: collect $K$ episodes, then replay them again and again until the estimates stop changing.</p>
+      <ul class="small">
+        <li class="fragment">Batch MC = average of the observed returns</li>
+        <li class="fragment">Batch TD(0) = exact value of the <b>MDP estimated from the data</b> (empirical transitions and rewards)</li>
+        <li class="fragment">TD is about <b>25% more accurate</b> for every amount of data: it uses the Markov structure, MC does not</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="notes">Sutton &amp; Barto §6.3 (Fig. 6.2, Example 6.4 "You are the predictor"). Batch TD gives the certainty-equivalence estimate. Replay buffers in deep RL are close to this batch setting.</aside>
+</section>
+
+<section class="slide">
+  <h2><span class="kicker">Bigger maze</span>Why: TD reuses what it knows about the future</h2>
+  <div class="cols" style="grid-template-columns: auto 1fr; gap: 36px">
+    <figure><div class="maze vertical" data-maze="coins" data-values="none" data-arrows="policy" data-mark="2,3" data-size="380"></div>
+      <figcaption>Dashed: a new start cell, one step off the usual route</figcaption></figure>
+    <div>
+      <p class="small">50 ordinary episodes from the start, then <b>one</b> episode from the new cell. How good is each estimate of $V(\text{new cell})$?</p>
+      <div class="learn-chart" data-maze="coins" data-mode="newstart" data-cell="2,3" data-episodes="50" data-runs="200" data-width="560"></div>
+      <ul class="small">
+        <li class="fragment">MC: the only data is that one noisy return</li>
+        <li class="fragment">TD: one step, then it joins states it already knows well. It <b>bootstraps</b> from them.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>References</h2>
+  <ul class="small">
+    <li>R. Sutton, A. Barto. <i>Reinforcement Learning: An Introduction</i>, 2nd ed., 2018. Chapters 5, 6, 7, 12.</li>
+    <li>Cs. Szepesvári. <i>Algorithms for Reinforcement Learning</i>, 2010. Chapter 2.</li>
+    <li>D. Silver. UCL RL course, Lecture 4.</li>
+    <li>G. Martius, P. Kolev. RL Lecture 4 (Model-free prediction), Universität Tübingen, 2026.</li>
+    <li>J. Schulman et al. High-dimensional continuous control using generalized advantage estimation. ICLR 2016.</li>
+  </ul>
+</section>
+
+</main>
+
+<script src="../assets/katex/katex.min.js"></script>
+<script src="../assets/katex/auto-render.min.js"></script>
+<script src="../assets/macros.js"></script>
+<script src="../assets/maze.js"></script>
+<script src="../assets/learn.js"></script>
+<script src="../assets/deck.js"></script>
+</body>
+</html>

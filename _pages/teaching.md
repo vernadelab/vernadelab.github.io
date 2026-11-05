@@ -12,20 +12,21 @@ nav_order: 4
     <p class="text-muted mb-2">M.Sc. AI and Robotics · University of Technology Nuremberg</p>
     <h2 class="card-title mt-0">Introduction to Reinforcement Learning</h2>
     <p class="card-text">Lecture materials for the Introduction to Reinforcement Learning course. The course comprises twelve lectures, with materials published here as they become available.</p>
-    <a class="btn btn-outline-primary" href="../assets/teaching/rl-utn/lecture-02-dynamic-programming/index.html">Open Lecture 2: Dynamic Programming</a>
-    <a class="btn btn-outline-primary" href="../assets/teaching/rl-utn/lecture-03-model-free-prediction/index.html">Open Lecture 3: Model-Free Prediction</a>
+    <a class="btn btn-outline-primary" href="https://vernadelab.github.io/intro-rl/lecture-02-dynamic-programming/">Open Lecture 2: Dynamic Programming</a>
+    <a class="btn btn-outline-primary" href="https://vernadelab.github.io/intro-rl/lecture-03-model-free-prediction/">Open Lecture 3: Model-Free Prediction</a>
     <a class="btn btn-outline-primary" href="https://download.cmutschler.de/lectures/UTN_RL_2026/04_Model-free_Control-v12.html#5">Open Lecture 4: Model-Free Control I</a>
+    <a class="btn btn-outline-primary" href="https://vernadelab.github.io/intro-rl/lecture-06-policy-gradient-1/">Open Lecture 6: Policy Gradient Methods I</a>
   </div>
 </div>
 
 ## Lecture sequence
 
 1. **Introduction to Reinforcement Learning (CM)**
-2. **Dynamic Programming** — <a href="../assets/teaching/rl-utn/lecture-02-dynamic-programming/index.html">Interactive HTML lecture</a>
-3. **Model-Free Prediction** — <a href="../assets/teaching/rl-utn/lecture-03-model-free-prediction/index.html">Interactive HTML lecture</a>
+2. **Dynamic Programming** — [Interactive HTML lecture](https://vernadelab.github.io/intro-rl/lecture-02-dynamic-programming/)
+3. **Model-Free Prediction** — [Interactive HTML lecture](https://vernadelab.github.io/intro-rl/lecture-03-model-free-prediction/)
 4. **Model-Free Control I (CM)** — [HTML lecture slides](https://download.cmutschler.de/lectures/UTN_RL_2026/04_Model-free_Control-v12.html#5)
 5. **Model-Free Control II (CM)**
-6. **Policy Gradient Methods I**
+6. **Policy Gradient Methods I** — [Interactive HTML lecture](https://vernadelab.github.io/intro-rl/lecture-06-policy-gradient-1/)
 7. **Policy Gradient Methods II**
 8. **Policy Gradient Methods III**
 9. **Model-Based Reinforcement Learning I (CM)**

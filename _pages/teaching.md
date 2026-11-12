@@ -40,6 +40,6 @@ The course schedule also includes a guest lecture, with the topic to be announce
 
 ## Selected tutorials
 
-- **Foundations of Reinforcement Learning and Control** — INFORMS tutorial given by [Onno Eberhard](https://onnoeberhard.com/) and [Martha White](https://apps.ualberta.ca/directory/person/whitem) (University of Alberta).
+- **Foundations of Reinforcement Learning and Control** — INFORMS tutorial given by [Onno Eberhard](https://onnoeberhard.com/) and [Martha White](https://apps.ualberta.ca/directory/person/whitem) (University of Alberta). [View the slides (PDF)](https://onnoeberhard.com/bib/vernade-2026-foundations/slides.pdf).
 - **Contextual Bandits** — Reinforcement Learning Summer School, Barcelona, 2023. [Watch the recording](https://www.youtube.com/watch?v=JfTUzEptKsI).
 - **Foundations for Continual Reinforcement Learning** — EWRL keynote, 2024.

@@ -15,6 +15,7 @@ nav_order: 4
     <a class="btn btn-outline-primary" href="https://vernadelab.github.io/intro-rl/lecture-02-dynamic-programming/">Open Lecture 2: Dynamic Programming</a>
     <a class="btn btn-outline-primary" href="https://vernadelab.github.io/intro-rl/lecture-03-model-free-prediction/">Open Lecture 3: Model-Free Prediction</a>
     <a class="btn btn-outline-primary" href="https://download.cmutschler.de/lectures/UTN_RL_2026/04_Model-free_Control-v12.html#5">Open Lecture 4: Model-Free Control I</a>
+    <a class="btn btn-outline-primary" href="https://download.cmutschler.de/lectures/UTN_RL_2026/05_Value_Function_Approximation-v15.html">Open Lecture 5: Model-Free Control II</a>
   </div>
 </div>
 
@@ -24,7 +25,7 @@ nav_order: 4
 2. **Dynamic Programming** — [Interactive HTML lecture](https://vernadelab.github.io/intro-rl/lecture-02-dynamic-programming/)
 3. **Model-Free Prediction** — [Interactive HTML lecture](https://vernadelab.github.io/intro-rl/lecture-03-model-free-prediction/)
 4. **Model-Free Control I (CM)** — [HTML lecture slides](https://download.cmutschler.de/lectures/UTN_RL_2026/04_Model-free_Control-v12.html#5)
-5. **Model-Free Control II (CM)**
+5. **Model-Free Control II (CM)** — [HTML lecture slides](https://download.cmutschler.de/lectures/UTN_RL_2026/05_Value_Function_Approximation-v15.html)
 6. **Policy Gradient Methods I**
 7. **Policy Gradient Methods II**
 8. **Policy Gradient Methods III**

@@ -6,7 +6,7 @@ importance: 2
 category: research programmes
 ---
 
-## Emmy Noether Programme, DFG AI Initiative · 2023–2029
+**Emmy Noether Programme, DFG AI Initiative · 2023–2029**
 
 FoLiReL studies the foundations of lifelong reinforcement learning in structured, non-stationary environments.
 

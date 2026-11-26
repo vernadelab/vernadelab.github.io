@@ -3,7 +3,7 @@
 - [Alexandre Marthe](https://amarthe.github.io/)
 - [Behzad Nourani](https://behzadnouranikoliji.github.io/)
 - [Çağatay Yıldız](https://cagatayyildiz.github.io/) (Postdoctoral researcher, University of Tübingen)
-- Sina Schmidt
+- Sina Schmid (PhD student, DFKI)
 - [Julian Zürn](https://www.hs-kempten.de/personen/julian-zuern) (Research Center Allgäu, Kempten University of Applied Sciences)
 - [Fenosoa Randrianjatovo](https://frandrianjatovo.com/) (Master’s student in biotechnology and bioinformatics, INRS)
 - [Yannick Streicher](https://de.linkedin.com/in/yannick-streicher) (Hume AI)

@@ -5,7 +5,7 @@
 - [Çağatay Yıldız](https://cagatayyildiz.github.io/) (Postdoctoral researcher, University of Tübingen)
 - Sina Schmidt
 - [Julian Zürn](https://www.hs-kempten.de/personen/julian-zuern) (Research Center Allgäu, Kempten University of Applied Sciences)
-- Fenosoa Randrianjavoto
+- [Fenosoa Randrianjatovo](https://frandrianjatovo.com/) (Master’s student in biotechnology and bioinformatics, INRS)
 - [Yannick Streicher](https://de.linkedin.com/in/yannick-streicher) (Hume AI)
 - [Till Freihaut](https://tfreihaut.github.io/) (PhD candidate, University of Zurich)
 - [Clémence Réda](https://clreda.github.io/) (Research scientist, Institut de Biologie de l’École Normale Supérieure)

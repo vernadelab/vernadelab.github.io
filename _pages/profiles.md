@@ -11,6 +11,8 @@ profiles:
     image: team/claire-vernade-2026.jpg
     content: team/claire-vernade.md
     image_circular: false
+    more_info: >-
+      <small class="text-muted d-block text-right">Portrait by <a href="https://www.valentinstoetzer.de/">Valentin Stötzer</a></small>
   - align: left
     image: team/nicolas-nguyen.webp
     content: team/nicolas-nguyen.md

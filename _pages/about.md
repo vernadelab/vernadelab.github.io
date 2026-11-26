@@ -4,14 +4,6 @@ title: home
 permalink: /
 subtitle: Foundations of Machine Learning · University of Technology Nuremberg
 
-profile:
-  align: right
-  image: team/claire-vernade.jpg
-  image_circular: false
-  more_info: >
-    <p>Vernade Lab</p>
-    <p>University of Technology Nuremberg</p>
-
 news: true
 selected_papers: false
 social: false
@@ -22,6 +14,8 @@ We study the mathematical foundations of **interactive and adaptive learning sys
 Most learning theory assumes a fixed world and a single objective. We study what happens when the world changes, feedback arrives late or indirectly, and a learner must acquire useful knowledge over a lifetime.
 
 The group is led by [Claire Vernade](https://www.cvernade.com/) and is part of the [University of Technology Nuremberg](https://www.utn.de/en/).
+
+{% include figure.liquid path="assets/img/team/vernade-lab-team.jpg" class="img-fluid rounded" alt="Vernade Lab team members together outdoors" caption="The Vernade Lab team" %}
 
 ## Research areas
 

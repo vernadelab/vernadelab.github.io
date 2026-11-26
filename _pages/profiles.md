@@ -8,7 +8,7 @@ nav_order: 1
 
 profiles:
   - align: right
-    image: team/claire-vernade.jpg
+    image: team/claire-vernade-2026.jpg
     content: team/claire-vernade.md
     image_circular: false
   - align: left
